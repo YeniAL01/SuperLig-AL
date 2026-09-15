@@ -1,7 +1,11 @@
 """Telegram Bot API client."""
+from __future__ import annotations
 from pathlib import Path
+import logging
 import requests
 from app.models import Prediction
+
+logger = logging.getLogger("superlig_al")
 
 
 class TelegramClient:
@@ -23,7 +27,7 @@ class TelegramClient:
             f"Tahmini skor: {prediction.home_goals}-{prediction.away_goals}\n"
             f"Güven: %{prediction.confidence:.1f}{note}"
         )
-        return self._post("sendMessage", {"text": text})
+        return self.send_text(text)
 
     def send_text(self, text: str) -> bool:
         """Send an arbitrary text message (used by test mode and reports)."""
@@ -32,6 +36,7 @@ class TelegramClient:
     def send_photo(self, image: Path, caption: str) -> bool:
         """Send a generated PNG report."""
         if not self.enabled:
+            logger.warning("telegram_disabled reason=missing_credentials")
             return False
         with image.open("rb") as handle:
             response = requests.post(
@@ -40,13 +45,33 @@ class TelegramClient:
                 files={"photo": handle},
                 timeout=30,
             )
+        if not response.ok:
+            logger.warning(
+                "telegram_send_photo_failed status=%s body=%s",
+                response.status_code,
+                response.text[:500],
+            )
         return response.ok
 
     def _post(self, method: str, payload: dict[str, str]) -> bool:
         if not self.enabled:
+            logger.warning("telegram_disabled reason=missing_credentials method=%s", method)
             return False
-        return requests.post(
-            f"https://api.telegram.org/bot{self.token}/{method}",
-            data={"chat_id": self.chat_id, **payload},
-            timeout=30,
-        ).ok
+        try:
+            response = requests.post(
+                f"https://api.telegram.org/bot{self.token}/{method}",
+                data={"chat_id": self.chat_id, **payload},
+                timeout=30,
+            )
+        except requests.RequestException as exc:
+            logger.warning("telegram_request_failed method=%s error=%s", method, exc)
+            return False
+        if not response.ok:
+            logger.warning(
+                "telegram_send_failed method=%s status=%s body=%s",
+                method,
+                response.status_code,
+                response.text[:500],
+            )
+            return False
+        return True

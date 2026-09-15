@@ -23,10 +23,21 @@ def run_test(settings: Settings, collector: FotMobCollector, logger: logging.Log
     - Draws random 'actual' scores only for the test.
     - Scores AL performance and sends a summary.
     - Does NOT write to production predictions / performance / memory stores.
+    - Always returns 0 on completion so CI does not treat match-count as exit code.
     """
-    telegram = TelegramClient(settings.prediction_token, settings.prediction_chat_id)
+    token = (settings.prediction_token or "").strip() or None
+    chat_id = (settings.prediction_chat_id or "").strip() or None
+    telegram = TelegramClient(token, chat_id)
     engine = PredictionEngine()
     confidence_engine = ConfidenceEngine()
+
+    logger.info(
+        "telegram_status enabled=%s token_set=%s chat_id_set=%s chat_id_len=%s",
+        telegram.enabled,
+        bool(token),
+        bool(chat_id),
+        len(chat_id or ""),
+    )
 
     now = datetime.now(UTC)
     horizon = now + timedelta(days=8)
@@ -40,7 +51,8 @@ def run_test(settings: Settings, collector: FotMobCollector, logger: logging.Log
     if not fixtures:
         msg = "[TEST] Önümüzdeki 8 günde Super Lig maçı bulunamadı."
         logger.info(msg)
-        telegram.send_text(msg)
+        ok = telegram.send_text(msg)
+        logger.info("telegram_send_empty ok=%s", ok)
         return 0
 
     header = (
@@ -50,12 +62,15 @@ def run_test(settings: Settings, collector: FotMobCollector, logger: logging.Log
         f"Not: Skorlar rastgele simüle edilir; üretim verisine yazılmaz."
     )
     logger.info("test_run_started fixtures=%s", len(fixtures))
-    telegram.send_text(header)
+    ok_header = telegram.send_text(header)
+    logger.info("telegram_send_header ok=%s", ok_header)
 
     records: list[dict] = []
+    sent_ok = 0
     for fixture in fixtures:
         prediction = _predict_fixture(collector, engine, confidence_engine, fixture, logger)
-        _send_prediction(telegram, prediction)
+        if _send_prediction(telegram, prediction):
+            sent_ok += 1
         actual_home, actual_away = _random_score()
         payload = prediction.payload()
         scored = score_prediction(payload, actual_home, actual_away)
@@ -79,8 +94,24 @@ def run_test(settings: Settings, collector: FotMobCollector, logger: logging.Log
 
     summary = _build_summary(records)
     logger.info("test_run_summary %s", summary.replace("\n", " | "))
-    telegram.send_text(summary)
-    return len(records)
+    ok_summary = telegram.send_text(summary)
+    logger.info(
+        "telegram_send_summary ok=%s predictions_sent=%s/%s",
+        ok_summary,
+        sent_ok,
+        len(fixtures),
+    )
+    if not telegram.enabled:
+        logger.warning(
+            "telegram_not_configured: Secrets TELEGRAM_PREDICTION_BOT_TOKEN / "
+            "TELEGRAM_PREDICTION_CHAT_ID eksik veya boş."
+        )
+    elif sent_ok == 0 and not ok_header:
+        logger.warning(
+            "telegram_all_sends_failed: Bot token/chat_id hatalı olabilir, "
+            "bot ile sohbet başlatılmamış olabilir veya chat_id yanlış olabilir."
+        )
+    return 0
 
 
 def _predict_fixture(
@@ -120,7 +151,7 @@ def _predict_fixture(
     )
 
 
-def _send_prediction(telegram: TelegramClient, prediction: Prediction) -> None:
+def _send_prediction(telegram: TelegramClient, prediction: Prediction) -> bool:
     """Same body as production, with an explicit [TEST] prefix."""
     note = f"\nNot: {prediction.note}" if prediction.note else ""
     text = (
@@ -130,7 +161,7 @@ def _send_prediction(telegram: TelegramClient, prediction: Prediction) -> None:
         f"Tahmini skor: {prediction.home_goals}-{prediction.away_goals}\n"
         f"Güven: %{prediction.confidence:.1f}{note}"
     )
-    telegram.send_text(text)
+    return telegram.send_text(text)
 
 
 def _random_score() -> tuple[int, int]:
