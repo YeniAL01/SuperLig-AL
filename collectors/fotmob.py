@@ -4,16 +4,21 @@ from datetime import UTC, datetime
 from app.models import Fixture
 from collectors.http import HttpClient
 
+
 class FotMobCollector:
     """Collects fixtures and limited team form from FotMob public data."""
-    BASE_URL = "https://www.fotmob.com/api"
+
+    # FotMob moved public JSON under /api/data/ (old /api/leagues and /api/matchDetails return 404).
+    BASE_URL = "https://www.fotmob.com/api/data"
+
     def __init__(self, client: HttpClient | None = None) -> None:
         self.client = client or HttpClient()
 
     def fixtures(self, league_id: int) -> list[Fixture]:
         """Return future fixtures from the league match index."""
         data = self.client.get_json(f"{self.BASE_URL}/leagues", {"id": league_id})
-        matches = data.get("matches", {}).get("allMatches", [])
+        # Response shape: fixtures.allMatches (previously matches.allMatches).
+        matches = data.get("fixtures", {}).get("allMatches", [])
         result: list[Fixture] = []
         for match in matches:
             status = match.get("status", {})
@@ -24,7 +29,15 @@ class FotMobCollector:
             if start > datetime.now(UTC):
                 home, away = match.get("home", {}).get("name"), match.get("away", {}).get("name")
                 if home and away:
-                    result.append(Fixture(int(match["id"]), home, away, start, match.get("venue", "")))
+                    result.append(
+                        Fixture(
+                            int(match["id"]),
+                            home,
+                            away,
+                            start,
+                            match.get("venue", "") or "",
+                        )
+                    )
         return result
 
     def match(self, fixture_id: int) -> dict:
