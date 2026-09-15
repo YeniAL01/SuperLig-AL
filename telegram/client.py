@@ -3,8 +3,10 @@ from pathlib import Path
 import requests
 from app.models import Prediction
 
+
 class TelegramClient:
     """Sends messages and documents only when credentials are configured."""
+
     def __init__(self, token: str | None, chat_id: str | None) -> None:
         self.token, self.chat_id = token, chat_id
 
@@ -16,9 +18,15 @@ class TelegramClient:
     def send_prediction(self, prediction: Prediction) -> bool:
         """Send a locked prediction, returning false for an unconfigured bot."""
         note = f"\nNot: {prediction.note}" if prediction.note else ""
-        text = (f"⚽ {prediction.fixture}\nKazanan: {prediction.winner}\n"
-                f"Tahmini skor: {prediction.home_goals}-{prediction.away_goals}\n"
-                f"Güven: %{prediction.confidence:.1f}{note}")
+        text = (
+            f"⚽ {prediction.fixture}\nKazanan: {prediction.winner}\n"
+            f"Tahmini skor: {prediction.home_goals}-{prediction.away_goals}\n"
+            f"Güven: %{prediction.confidence:.1f}{note}"
+        )
+        return self._post("sendMessage", {"text": text})
+
+    def send_text(self, text: str) -> bool:
+        """Send an arbitrary text message (used by test mode and reports)."""
         return self._post("sendMessage", {"text": text})
 
     def send_photo(self, image: Path, caption: str) -> bool:
@@ -26,10 +34,19 @@ class TelegramClient:
         if not self.enabled:
             return False
         with image.open("rb") as handle:
-            response = requests.post(f"https://api.telegram.org/bot{self.token}/sendPhoto", data={"chat_id": self.chat_id, "caption": caption}, files={"photo": handle}, timeout=30)
+            response = requests.post(
+                f"https://api.telegram.org/bot{self.token}/sendPhoto",
+                data={"chat_id": self.chat_id, "caption": caption},
+                files={"photo": handle},
+                timeout=30,
+            )
         return response.ok
 
     def _post(self, method: str, payload: dict[str, str]) -> bool:
         if not self.enabled:
             return False
-        return requests.post(f"https://api.telegram.org/bot{self.token}/{method}", data={"chat_id": self.chat_id, **payload}, timeout=30).ok
+        return requests.post(
+            f"https://api.telegram.org/bot{self.token}/{method}",
+            data={"chat_id": self.chat_id, **payload},
+            timeout=30,
+        ).ok
