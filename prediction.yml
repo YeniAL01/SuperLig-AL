@@ -1,0 +1,26 @@
+name: Prediction
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - run: python main.py predict
+        env:
+          TELEGRAM_PREDICTION_BOT_TOKEN: ${{ secrets.TELEGRAM_PREDICTION_BOT_TOKEN }}
+          TELEGRAM_PREDICTION_CHAT_ID: ${{ secrets.TELEGRAM_PREDICTION_CHAT_ID }}
+      - name: Persist JSON state
+        run: |
+          git config user.name "superlig-al[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "chore: update prediction state"
+          git push
