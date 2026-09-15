@@ -4,10 +4,12 @@ import argparse
 from config.settings import Settings
 from collectors.fotmob import FotMobCollector
 from app.service import PredictionService
+from app.test_run import run_test
 from database.store import JsonStore
 from learning.performance import score_prediction
 from memory.engine import update_memory
 from utils.logging import configure_logging
+
 
 def learn(settings: Settings, collector: FotMobCollector) -> int:
     """Settle locked predictions for which FotMob exposes a final score."""
@@ -27,7 +29,12 @@ def learn(settings: Settings, collector: FotMobCollector) -> int:
             if not status.get("finished") or actual is None:
                 continue
             actual_home, actual_away = actual
-            result = {**prediction, **score_prediction(prediction, actual_home, actual_away), "actual_home": actual_home, "actual_away": actual_away}
+            result = {
+                **prediction,
+                **score_prediction(prediction, actual_home, actual_away),
+                "actual_home": actual_home,
+                "actual_away": actual_away,
+            }
             records.append(result)
             memory = update_memory(memory, result)
             added += 1
@@ -38,28 +45,38 @@ def learn(settings: Settings, collector: FotMobCollector) -> int:
     logger.info("learning_completed settled=%s", added)
     return added
 
+
 def _final_score(teams: object) -> tuple[int, int] | None:
     """Read either known FotMob home/away or two-row score representations."""
     if isinstance(teams, dict):
         home, away = teams.get("home", {}), teams.get("away", {})
-        if isinstance(home, dict) and isinstance(away, dict) and home.get("score") is not None and away.get("score") is not None:
+        if (
+            isinstance(home, dict)
+            and isinstance(away, dict)
+            and home.get("score") is not None
+            and away.get("score") is not None
+        ):
             return int(home["score"]), int(away["score"])
     if isinstance(teams, list) and len(teams) >= 2:
         if teams[0].get("score") is not None and teams[1].get("score") is not None:
             return int(teams[0]["score"]), int(teams[1]["score"])
     return None
 
+
 def main() -> int:
-    """Run prediction or learning task selected by the CLI."""
+    """Run prediction, learning, or manual test selected by the CLI."""
     parser = argparse.ArgumentParser(description="SuperLig-AL")
-    parser.add_argument("command", choices=("predict", "learn"))
+    parser.add_argument("command", choices=("predict", "learn", "test"))
     args = parser.parse_args()
     settings = Settings()
     logger = configure_logging(settings)
     collector = FotMobCollector()
     if args.command == "predict":
         return PredictionService(settings, collector, logger).run()
+    if args.command == "test":
+        return run_test(settings, collector, logger)
     return learn(settings, collector)
 
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main() or 0)
