@@ -597,7 +597,8 @@ def publication_stats(
                 else None
             ),
     }
-    def market_performance(
+
+def market_performance(
     predictions: list[dict],
     results: list[dict],
     *,
