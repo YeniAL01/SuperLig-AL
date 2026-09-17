@@ -99,6 +99,8 @@ class EnsembleDecisionEngine:
         )
 
         return EnsembleResult(
+            fixture_id=predictions[0].fixture_id,
+            fixture_name=predictions[0].fixture_name,
             home_goals=final_score[0],
             away_goals=final_score[1],
             probability=round(

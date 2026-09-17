@@ -1,5 +1,5 @@
 """Domain data structures."""
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +22,17 @@ class Prediction:
     confidence: float
     lineup_verified: bool
     note: str = ""
+    probabilities: dict = field(default_factory=dict)
+    component_probabilities: dict = field(default_factory=dict)
+    model_weights: dict = field(default_factory=dict)
+    kickoff: str = ""
+    created_at: str = ""
+    home_team: str = ""
+    away_team: str = ""
+    outcome: str = ""
+    data_quality: float = 0.0
+    model_version: str = "legacy"
+    score_probability: float = 0.0
 
     def payload(self) -> dict[str, object]:
         """Convert to JSON-compatible data."""

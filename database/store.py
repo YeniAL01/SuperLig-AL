@@ -16,10 +16,8 @@ class JsonStore:
         path = self.directory / f"{name}.json"
         if not path.exists():
             return default
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return default
+        # Corruption must stop the run rather than silently erase learning history.
+        return json.loads(path.read_text(encoding="utf-8-sig"))
 
     def write(self, name: str, value: Any) -> None:
         """Atomically replace a named document."""

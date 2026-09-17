@@ -23,7 +23,7 @@ def create_weekly_report(records: list[dict[str, Any]], output: Path) -> Path:
         line = f"{item.get('fixture','')} | {item.get('home_goals')}-{item.get('away_goals')} | {item.get('actual_home')}-{item.get('actual_away')} | {'✓' if item.get('winner_correct') else '✗'} | {'✓' if item.get('score_correct') else '✗'} | {item.get('points',0)}"
         draw.text((35, y), line[:210], fill="white", font=font)
         y += row_height
-    insight = "Değerlendirme: Güven kalibrasyonu ve sonuç isabeti gelecek tahminlerde ağırlıklandırılır."
+    insight = "Son 7 gün, gölge tahminler dahil. Model ağırlıkları gerçekleşen sonuçların log loss hatasıyla güncellenir."
     draw.text((35, height - 45), insight, fill="#a7f3d0", font=font)
     output.parent.mkdir(parents=True, exist_ok=True)
     image.save(output, "PNG")

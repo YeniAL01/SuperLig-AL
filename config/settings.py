@@ -10,6 +10,7 @@ class Settings:
     report_dir: Path = Path("reports")
     log_dir: Path = Path("logs")
     league_id: int = 71
+    minimum_probability: float = 58.0
     prediction_token: str | None = os.getenv("TELEGRAM_PREDICTION_BOT_TOKEN")
     prediction_chat_id: str | None = os.getenv("TELEGRAM_PREDICTION_CHAT_ID")
     report_token: str | None = os.getenv("TELEGRAM_REPORT_BOT_TOKEN")

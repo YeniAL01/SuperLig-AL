@@ -1,94 +1,87 @@
-"""Prediction workflow coordinator."""
-from __future__ import annotations
-from datetime import UTC, datetime, timedelta
+"""Immutable pre-match snapshots, including non-published shadow forecasts."""
+from datetime import UTC, datetime
 import logging
-from app.models import Fixture, Prediction
-from ai.decision import decide
-from collectors.fotmob import FotMobCollector
-from config.settings import Settings
+from app.models import Prediction
 from database.store import JsonStore
-from prediction.confidence import ConfidenceEngine
-from prediction.engine import PredictionEngine, TeamForm
+from prediction.engine import PredictionEngine
+from learning.history import forms, merge_results
 from telegram.client import TelegramClient
 
 class PredictionService:
-    """Coordinates collection, decision, immutable lock, and delivery."""
-    def __init__(self, settings: Settings, collector: FotMobCollector, logger: logging.Logger) -> None:
+    def __init__(self, settings, collector, logger: logging.Logger):
         self.settings, self.collector, self.logger = settings, collector, logger
         self.store = JsonStore(settings.data_dir)
-        self.confidence = ConfidenceEngine()
 
     def run(self) -> int:
-        """Inspect fixtures and publish only those in the T-15 lock window."""
+        now = datetime.now(UTC)
+        history = merge_results(self.store.read("results", []), self.collector.results(self.settings.league_id))
+        self.store.write("results", history)
+        forecasts = self.store.read("forecasts", [])
         published = self.store.read("predictions", [])
-        published_ids = {int(p["fixture_id"]) for p in published}
-        snapshots = self.store.read("pre_match_analysis", {})
-        fallbacks = self.store.read("fallback_predictions", {})
+        locked = {str(r["fixture_id"]) for r in forecasts + published}
         count = 0
         for fixture in self.collector.fixtures(self.settings.league_id):
-            minutes = (fixture.start - datetime.now(UTC)).total_seconds() / 60
-            if 18 <= minutes <= 60:
-                snapshots[str(fixture.id)] = {"checked_at": datetime.now(UTC).isoformat(), "minutes_to_kickoff": round(minutes, 1)}
-            if 17.5 <= minutes <= 18.5 and str(fixture.id) not in fallbacks:
-                fallback = self._build(fixture)
-                if fallback is not None:
-                    fallbacks[str(fixture.id)] = fallback.payload()
-            if fixture.id in published_ids or not 0 <= minutes <= 15:
+            minutes = (fixture.start-datetime.now(UTC)).total_seconds()/60
+            if str(fixture.id) in locked or not 0 < minutes <= 15:
                 continue
-            prediction = self._build(fixture) or self._restore(fallbacks.get(str(fixture.id)))
+            prediction = self._build(fixture)
             if prediction is None:
                 continue
-            decision = decide(prediction.confidence, self.confidence.minimum_to_publish, prediction.lineup_verified, minutes)
-            if not decision.publish:
-                self.logger.info("prediction_rejected fixture_id=%s reason=%s", fixture.id, decision.reason)
-                continue
-            published.append(prediction.payload())
-            self.store.write("predictions", published)
-            TelegramClient(self.settings.prediction_token, self.settings.prediction_chat_id).send_prediction(prediction)
-            self.logger.info("prediction_locked fixture_id=%s confidence=%s", fixture.id, prediction.confidence)
-            count += 1
-        self.store.write("pre_match_analysis", snapshots)
-        self.store.write("fallback_predictions", fallbacks)
+            payload = prediction.payload()
+            publishable = (prediction.data_quality >= .5 and
+                           prediction.confidence >= self.settings.minimum_probability)
+            payload["publishable"] = publishable
+            # Persist every forecast, so selection cannot hide model failures.
+            forecasts.append(payload)
+            self.store.write("forecasts", forecasts)
+            locked.add(str(fixture.id))
+            if publishable:
+                published.append(prediction.payload())
+                self.store.write("predictions", published)
+                count += 1
+            else:
+                self.logger.info("shadow_only fixture_id=%s probability=%s quality=%s",
+                                 fixture.id, prediction.confidence, prediction.data_quality)
+        # Reconcile a crash between shadow lock and publication persistence.
+        ids = {str(p["fixture_id"]) for p in published}
+        for row in forecasts:
+            if row.get("publishable") and str(row["fixture_id"]) not in ids:
+                published.append({k:v for k,v in row.items() if k != "publishable"})
+                ids.add(str(row["fixture_id"]))
+        self.store.write("predictions", published)
+        delivery = self.store.read("delivery", {})
+        client = TelegramClient(self.settings.prediction_token, self.settings.prediction_chat_id)
+        if client.enabled:
+            for row in published:
+                key = str(row["fixture_id"])
+                if delivery.get(key) or not row.get("kickoff"):
+                    continue
+                from learning.adaptive import timestamp
+                if timestamp(row["kickoff"]) <= datetime.now(UTC):
+                    continue
+                if client.send_prediction(Prediction(**row)):
+                    delivery[key] = datetime.now(UTC).isoformat()
+                    self.store.write("delivery", delivery)
         return count
 
-    @staticmethod
-    def _restore(payload: object) -> Prediction | None:
-        """Reconstruct a T-18 fallback prediction after a transient provider outage."""
-        return Prediction(**payload) if isinstance(payload, dict) else None
-
-    def _build(self, fixture: Fixture) -> Prediction | None:
-        """Collect match detail and make a conservative decision."""
+    def _build(self, fixture):
+        as_of = datetime.now(UTC)
+        home, away = forms(self.store.read("results", []), fixture.home, fixture.away, as_of)
+        verified = False
         try:
-            detail = self.collector.match(fixture.id)
+            verified = self._lineup_verified(self.collector.match(fixture.id))
         except Exception as exc:
-            self.logger.warning("match_collection_failed fixture_id=%s error=%s", fixture.id, exc)
+            self.logger.warning("lineup_unavailable fixture_id=%s error=%s", fixture.id, type(exc).__name__)
+        if datetime.now(UTC) >= fixture.start:
             return None
-        lineup_verified = self._lineup_verified(detail)
-        home, away = self._forms(detail)
-        records = self.store.read("performance", [])
-        from learning.performance import calibration
-        confidence = self.confidence.calculate(home, away, lineup_verified, calibration(records))
-        if confidence < self.confidence.minimum_to_publish:
-            self.logger.info("prediction_rejected fixture_id=%s confidence=%s", fixture.id, confidence)
-            return None
-        prediction = PredictionEngine().predict(fixture, home, away, confidence, lineup_verified)
-        if not lineup_verified:
-            return Prediction(**{**prediction.payload(), "note": "İlk 11 doğrulanamadığı için analiz mevcut veriler kullanılarak oluşturulmuştur."})
-        return prediction
+        return PredictionEngine(self.store.read("performance", [])).predict(
+            fixture, home, away, lineup_verified=verified, as_of=as_of)
 
     @staticmethod
-    def _lineup_verified(detail: dict) -> bool:
-        """Recognize a provider's non-empty confirmed lineup list."""
-        lineups = detail.get("content", {}).get("lineup", {})
-        return bool(lineups.get("homeTeam", {}).get("starters") and lineups.get("awayTeam", {}).get("starters"))
+    def _lineup_verified(detail):
+        lineup = detail.get("content", {}).get("lineup", {})
+        if not isinstance(lineup, dict):
+            return False
+        return all(isinstance(lineup.get(side), dict) and
+                   len(lineup[side].get("starters") or []) == 11 for side in ("homeTeam", "awayTeam"))
 
-    @staticmethod
-    def _forms(detail: dict) -> tuple[TeamForm, TeamForm]:
-        """Extract available form rows, retaining conservative defaults."""
-        form = detail.get("content", {}).get("form", {})
-        def build(side: str) -> TeamForm:
-            rows = form.get(side, []) if isinstance(form, dict) else []
-            scores = [row.get("score", {}) for row in rows if isinstance(row, dict)]
-            scored = sum(float(x.get("home", 0)) + float(x.get("away", 0)) for x in scores) / max(1, len(scores) * 2)
-            return TeamForm(scored or 1.0, 1.2, 1.0, len(scores))
-        return build("homeTeam"), build("awayTeam")

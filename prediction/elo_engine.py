@@ -88,6 +88,8 @@ class EloEngine:
 
         return EnginePrediction(
             engine="elo",
+            fixture_id=0,
+            fixture_name=f"{home.name} - {away.name}",
             home_goals=home_goals,
             away_goals=away_goals,
             probability=round(probability, 4),

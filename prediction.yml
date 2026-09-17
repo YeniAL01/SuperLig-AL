@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: superlig-state
+  cancel-in-progress: false
 jobs:
   predict:
     runs-on: ubuntu-latest

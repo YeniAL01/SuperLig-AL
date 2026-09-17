@@ -1,12 +1,12 @@
 """Prediction unit tests."""
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from app.models import Fixture
 from prediction.confidence import ConfidenceEngine
 from prediction.engine import PredictionEngine, TeamForm
 
 def test_prediction_is_bounded() -> None:
     """The engine emits a valid score and confidence."""
-    fixture = Fixture(1, "Ev", "Dep", datetime.now(UTC))
+    fixture = Fixture(1, "Ev", "Dep", datetime.now(UTC) + timedelta(hours=1))
     form = TeamForm(1.5, 1.0, 1.5, 10)
     prediction = PredictionEngine().predict(fixture, form, form, 70, True)
     assert 0 <= prediction.home_goals <= 5

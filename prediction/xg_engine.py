@@ -96,6 +96,8 @@ class XGEngine:
 
         return EnginePrediction(
             engine="xg",
+            fixture_id=0,
+            fixture_name=f"{home.name} - {away.name}",
             home_goals=score[0],
             away_goals=score[1],
             probability=round(probability, 4),
