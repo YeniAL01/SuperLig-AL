@@ -31,18 +31,26 @@ def score_prediction(
         home_goals = int(
             result_row.get(
                 "home_goals",
-                result_row.get("actual_home", 0),
+                result_row.get(
+                    "actual_home",
+                    0,
+                ),
             )
         )
         away_goals = int(
             result_row.get(
                 "away_goals",
-                result_row.get("actual_away", 0),
+                result_row.get(
+                    "actual_away",
+                    0,
+                ),
             )
         )
 
     if away_goals is None:
-        raise TypeError("away_goals is required")
+        raise TypeError(
+            "away_goals is required"
+        )
 
     label = (
         "HOME"
@@ -52,14 +60,25 @@ def score_prediction(
         else "DRAW"
     )
 
-    teams = prediction["fixture"].split(" - ", 1)
+    teams = prediction[
+        "fixture"
+    ].split(
+        " - ",
+        1,
+    )
 
-    predicted_outcome = prediction.get("outcome")
+    predicted_outcome = prediction.get(
+        "outcome"
+    )
 
     if predicted_outcome not in LABELS:
         predicted_team = (
-            prediction.get("predicted_winner")
-            or prediction.get("winner")
+            prediction.get(
+                "predicted_winner"
+            )
+            or prediction.get(
+                "winner"
+            )
         )
 
         if len(teams) == 2:
@@ -76,9 +95,19 @@ def score_prediction(
             predicted_outcome == label
         ),
         "score_correct": (
-            int(prediction.get("home_goals", -1))
+            int(
+                prediction.get(
+                    "home_goals",
+                    -1,
+                )
+            )
             == int(home_goals)
-            and int(prediction.get("away_goals", -1))
+            and int(
+                prediction.get(
+                    "away_goals",
+                    -1,
+                )
+            )
             == int(away_goals)
         ),
     }
@@ -89,17 +118,25 @@ def score_prediction(
 
     if valid_probs(probabilities):
         probability = max(
-            float(probabilities[label]),
+            float(
+                probabilities[label]
+            ),
             1e-15,
         )
 
-        result["log_loss"] = -log(
+        result[
+            "log_loss"
+        ] = -log(
             probability
         )
 
-        result["brier_score"] = sum(
+        result[
+            "brier_score"
+        ] = sum(
             (
-                float(probabilities[key])
+                float(
+                    probabilities[key]
+                )
                 - int(key == label)
             ) ** 2
             for key in LABELS
@@ -108,7 +145,9 @@ def score_prediction(
     return result
 
 
-def calibration(records: list) -> float:
+def calibration(
+    records: list,
+) -> float:
     """Observed winner accuracy over the latest 100 settled forecasts."""
     rows = [
         row
@@ -121,7 +160,11 @@ def calibration(records: list) -> float:
 
     return (
         sum(
-            bool(row["winner_correct"])
+            bool(
+                row[
+                    "winner_correct"
+                ]
+            )
             for row in rows
         )
         / len(rows)
@@ -134,7 +177,10 @@ def _safe_mean(
     if not values:
         return None
 
-    return sum(values) / len(values)
+    return (
+        sum(values)
+        / len(values)
+    )
 
 
 def _rate(
@@ -144,7 +190,10 @@ def _rate(
     if total <= 0:
         return None
 
-    return correct / total
+    return (
+        correct
+        / total
+    )
 
 
 def _percent(
@@ -165,12 +214,16 @@ def _is_eligible(
     """Return whether the forecast met publication conditions."""
     if "eligible" in record:
         return bool(
-            record["eligible"]
+            record[
+                "eligible"
+            ]
         )
 
     if "publishable" in record:
         return bool(
-            record["publishable"]
+            record[
+                "publishable"
+            ]
         )
 
     status = str(
@@ -195,14 +248,19 @@ def _is_delivered(
     """Return whether Telegram delivery was actually confirmed."""
     if "delivered" in record:
         return bool(
-            record["delivered"]
+            record[
+                "delivered"
+            ]
         )
 
     delivery = record.get(
         "delivery"
     )
 
-    if isinstance(delivery, dict):
+    if isinstance(
+        delivery,
+        dict,
+    ):
         status = str(
             delivery.get(
                 "status",
@@ -241,11 +299,15 @@ def _group(
         for row in rows
         if (
             isinstance(
-                row.get("log_loss"),
+                row.get(
+                    "log_loss"
+                ),
                 (int, float),
             )
             and isinstance(
-                row.get("brier_score"),
+                row.get(
+                    "brier_score"
+                ),
                 (int, float),
             )
         )
@@ -266,7 +328,9 @@ def _group(
     winner_accuracy = (
         sum(
             bool(
-                row["winner_correct"]
+                row[
+                    "winner_correct"
+                ]
             )
             for row in winner_rows
         )
@@ -277,12 +341,16 @@ def _group(
 
     return {
         "matches": count,
-        "accuracy": winner_accuracy,
-        "winner_accuracy": winner_accuracy,
+        "accuracy":
+            winner_accuracy,
+        "winner_accuracy":
+            winner_accuracy,
         "exact_score_accuracy": (
             sum(
                 bool(
-                    row["score_correct"]
+                    row[
+                        "score_correct"
+                    ]
                 )
                 for row in score_rows
             )
@@ -292,7 +360,11 @@ def _group(
         ),
         "log_loss": (
             sum(
-                float(row["log_loss"])
+                float(
+                    row[
+                        "log_loss"
+                    ]
+                )
                 for row in scored
             )
             / len(scored)
@@ -301,7 +373,11 @@ def _group(
         ),
         "brier_score": (
             sum(
-                float(row["brier_score"])
+                float(
+                    row[
+                        "brier_score"
+                    ]
+                )
                 for row in scored
             )
             / len(scored)
@@ -330,7 +406,9 @@ def _reliability_bins(
         for row in records:
             try:
                 confidence = float(
-                    row["confidence"]
+                    row[
+                        "confidence"
+                    ]
                 )
             except (
                 KeyError,
@@ -340,10 +418,15 @@ def _reliability_bins(
                 continue
 
             if (
-                low <= confidence < high
-                and "winner_correct" in row
+                low
+                <= confidence
+                < high
+                and "winner_correct"
+                in row
             ):
-                rows.append(row)
+                rows.append(
+                    row
+                )
 
         if not rows:
             continue
@@ -357,11 +440,14 @@ def _reliability_bins(
                         100,
                     ),
                 ],
-                "matches": len(rows),
+                "matches":
+                    len(rows),
                 "predicted": (
                     sum(
                         float(
-                            row["confidence"]
+                            row[
+                                "confidence"
+                            ]
                         )
                         for row in rows
                     )
@@ -392,42 +478,52 @@ def summarize(
     eligible = [
         row
         for row in records
-        if _is_eligible(row)
+        if _is_eligible(
+            row
+        )
     ]
 
     delivered = [
         row
         for row in records
-        if _is_delivered(row)
+        if _is_delivered(
+            row
+        )
     ]
 
     total = len(records)
 
     return {
-        "all": _group(
-            records
-        ),
-        "eligible": _group(
-            eligible
-        ),
-        "delivered": _group(
-            delivered
-        ),
+        "all":
+            _group(
+                records
+            ),
+        "eligible":
+            _group(
+                eligible
+            ),
+        "delivered":
+            _group(
+                delivered
+            ),
 
         # Backward-compatible alias.
         # "published" means publication-eligible,
         # not necessarily Telegram-delivered.
-        "published": _group(
-            eligible
-        ),
+        "published":
+            _group(
+                eligible
+            ),
 
         "eligible_coverage": (
-            len(eligible) / total
+            len(eligible)
+            / total
             if total
             else None
         ),
         "delivery_coverage": (
-            len(delivered) / total
+            len(delivered)
+            / total
             if total
             else None
         ),
@@ -435,7 +531,8 @@ def summarize(
         # Backward compatibility for code/reports
         # that still read the old coverage key.
         "coverage": (
-            len(eligible) / total
+            len(eligible)
+            / total
             if total
             else None
         ),
@@ -450,11 +547,14 @@ def publication_stats(
     predictions: list[dict],
 ) -> dict:
     """Separate eligible forecasts from confirmed Telegram deliveries."""
-    total = len(predictions)
+    total = len(
+        predictions
+    )
 
     eligible = sum(
         1
-        for prediction in predictions
+        for prediction
+        in predictions
         if _is_eligible(
             prediction
         )
@@ -462,28 +562,37 @@ def publication_stats(
 
     delivered = sum(
         1
-        for prediction in predictions
+        for prediction
+        in predictions
         if _is_delivered(
             prediction
         )
     )
 
     return {
-        "total_predictions": total,
-        "eligible": eligible,
-        "delivered": delivered,
-        "not_delivered": max(
-            0,
-            eligible - delivered,
-        ),
-        "eligible_rate": _percent(
-            eligible / total
-            if total
-            else None
-        ),
+        "total_predictions":
+            total,
+        "eligible":
+            eligible,
+        "delivered":
+            delivered,
+        "not_delivered":
+            max(
+                0,
+                eligible
+                - delivered,
+            ),
+        "eligible_rate":
+            _percent(
+                eligible
+                / total
+                if total
+                else None
+            ),
         "delivery_rate_of_eligible":
             _percent(
-                delivered / eligible
+                delivered
+                / eligible
                 if eligible
                 else None
             ),
@@ -512,24 +621,35 @@ def publication_stats(
         )
 
         if market in grouped:
-            grouped[market].append(
+            grouped[
+                market
+            ].append(
                 sample
             )
 
     output = {}
 
     for market in MARKETS:
-        rows = grouped[market]
+        rows = grouped[
+            market
+        ]
 
-        total = len(rows)
+        total = len(
+            rows
+        )
 
         correct = sum(
             1
             for row in rows
-            if row["correct"]
+            if row[
+                "correct"
+            ]
         )
 
-        wrong = total - correct
+        wrong = (
+            total
+            - correct
+        )
 
         accuracy = _rate(
             correct,
@@ -539,7 +659,9 @@ def publication_stats(
         mean_confidence = (
             sum(
                 float(
-                    row["confidence"]
+                    row[
+                        "confidence"
+                    ]
                 )
                 for row in rows
             )
@@ -560,25 +682,36 @@ def publication_stats(
             else None
         )
 
-        last_20 = rows[-20:]
-        last_30 = rows[-30:]
+        last_20 = rows[
+            -20:
+        ]
+
+        last_30 = rows[
+            -30:
+        ]
 
         last_20_correct = sum(
             1
             for row in last_20
-            if row["correct"]
+            if row[
+                "correct"
+            ]
         )
 
         last_30_correct = sum(
             1
             for row in last_30
-            if row["correct"]
+            if row[
+                "correct"
+            ]
         )
 
         last_20_error = (
             1.0
             - last_20_correct
-            / len(last_20)
+            / len(
+                last_20
+            )
             if last_20
             else None
         )
@@ -586,26 +719,34 @@ def publication_stats(
         last_30_error = (
             1.0
             - last_30_correct
-            / len(last_30)
+            / len(
+                last_30
+            )
             if last_30
             else None
         )
 
-        output[market] = {
+        output[
+            market
+        ] = {
             "label":
                 MARKET_LABELS[
                     market
                 ],
-            "samples": total,
-            "correct": correct,
-            "wrong": wrong,
+            "samples":
+                total,
+            "correct":
+                correct,
+            "wrong":
+                wrong,
             "accuracy":
                 _percent(
                     accuracy
                 ),
             "error_rate":
                 _percent(
-                    1.0 - accuracy
+                    1.0
+                    - accuracy
                     if accuracy
                     is not None
                     else None
@@ -629,13 +770,17 @@ def publication_stats(
                 else None
             ),
             "recent_20_samples":
-                len(last_20),
+                len(
+                    last_20
+                ),
             "recent_20_error_rate":
                 _percent(
                     last_20_error
                 ),
             "recent_30_samples":
-                len(last_30),
+                len(
+                    last_30
+                ),
             "recent_30_error_rate":
                 _percent(
                     last_30_error
@@ -667,7 +812,9 @@ def factor_performance(
         market_rows = [
             row
             for row in samples
-            if row.get("market")
+            if row.get(
+                "market"
+            )
             == market
         ]
 
@@ -676,7 +823,7 @@ def factor_performance(
         for row in market_rows:
             factors = row.get(
                 "factors",
-                {}
+                {},
             )
 
             if isinstance(
@@ -706,13 +853,16 @@ def factor_performance(
                             )
                         )
                     )
+
                 except (
                     TypeError,
                     ValueError,
                 ):
                     continue
 
-                if row["correct"]:
+                if row[
+                    "correct"
+                ]:
                     correct_values.append(
                         value
                     )
@@ -737,7 +887,9 @@ def factor_performance(
 
             output[
                 market
-            ][factor] = {
+            ][
+                factor
+            ] = {
                 "correct_samples":
                     len(
                         correct_values
@@ -780,7 +932,9 @@ def learning_performance(
     for market in MARKETS:
         data = state[
             "markets"
-        ][market]
+        ][
+            market
+        ]
 
         recent_20 = data.get(
             "recent_20",
@@ -797,7 +951,9 @@ def learning_performance(
             {},
         )
 
-        output[market] = {
+        output[
+            market
+        ] = {
             "label":
                 MARKET_LABELS[
                     market
@@ -862,10 +1018,13 @@ def learning_performance(
                 ),
             "weights": {
                 key: round(
-                    float(value),
+                    float(
+                        value
+                    ),
                     6,
                 )
-                for key, value in (
+                for key, value
+                in (
                     data.get(
                         "weights",
                         {},
@@ -890,7 +1049,7 @@ def overall_performance(
     results: list[dict],
     learning_state: dict | None = None,
 ) -> dict:
-    """Full performance report for the new adaptive layer."""
+    """Full performance report for the adaptive layer."""
     eligible_predictions = [
         prediction
         for prediction in predictions
