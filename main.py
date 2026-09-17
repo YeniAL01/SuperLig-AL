@@ -70,11 +70,23 @@ def _final_score(teams):
 
 def main():
     parser = argparse.ArgumentParser(description="SuperLig-AL")
-    parser.add_argument("command", choices=("predict","learn","test","backtest","import-history","metrics"))
+    parser.add_argument("command", choices=("predict","learn","test","test-telegram","backtest","import-history","metrics"))
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--output", type=Path, default=Path("reports/backtest.json"))
     args = parser.parse_args()
     settings = Settings()
+    if args.command == "test-telegram":
+        from telegram.client import TelegramClient
+        logger = configure_logging(settings)
+        client = TelegramClient(settings.prediction_token, settings.prediction_chat_id)
+        logger.info("telegram_test_started token_set=%s chat_id_set=%s", bool(client.token), bool(client.chat_id))
+        sent = client.send_text("✅ SuperLig-AL Telegram bağlantı testi başarılı.\n"
+                                "Bu bir bağlantı testidir; maç tahmini değildir.")
+        if sent:
+            logger.info("telegram_test_success: Test mesajı Telegram API tarafından kabul edildi.")
+            return 0
+        logger.error("telegram_test_failed: Bot token/chat ID, botla sohbet ve kanal izinlerini kontrol edin.")
+        return 1
     store = JsonStore(settings.data_dir)
     if args.command in ("backtest", "import-history"):
         if not args.csv:

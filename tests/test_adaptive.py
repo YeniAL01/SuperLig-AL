@@ -224,3 +224,70 @@ def test_legacy_winner_scoring_all_outcomes():
     p["winner"]="Beraberlik"
     assert score_prediction(p,0,0)["winner_correct"]
 
+
+def test_no_match_summary_is_explicit(tmp_path,caplog):
+    caplog.set_level(logging.INFO)
+    service=PredictionService(settings(tmp_path),OfflineCollector(),logging.getLogger("test"))
+    service.run()
+    assert "prediction_summary fixtures=0" in caplog.text
+    assert "delivery_disabled=1" in caplog.text
+    assert "no_telegram_message" in caplog.text
+
+def test_outside_window_and_low_quality_reasons(tmp_path,caplog):
+    caplog.set_level(logging.INFO)
+    fixtures=[Fixture(101,"A","B",datetime.now(UTC)+timedelta(hours=2)),
+              Fixture(102,"A","B",datetime.now(UTC)+timedelta(minutes=10))]
+    service=PredictionService(settings(tmp_path),OfflineCollector(fixtures=fixtures),logging.getLogger("test"))
+    service.run()
+    assert "outside_window=1" in caplog.text
+    assert "low_data=1" in caplog.text
+    assert "probability_below_threshold" in caplog.text
+    assert "next_fixture" in caplog.text
+
+@pytest.mark.parametrize("status,body,expected",[
+    (200,{"ok":True},True),
+    (200,{"ok":False,"error_code":400},False),
+    (401,{"ok":False,"error_code":401},False),
+    (403,{"ok":False,"error_code":403},False),
+    (200,[],False),
+])
+def test_telegram_api_response(monkeypatch,status,body,expected):
+    from types import SimpleNamespace
+    from telegram.client import TelegramClient
+    response=SimpleNamespace(ok=status<400,status_code=status,json=lambda:body)
+    monkeypatch.setattr("telegram.client.requests.post",lambda *a,**kw:response)
+    assert TelegramClient("fake-token","fake-chat").send_text("test") is expected
+
+def test_telegram_exception_does_not_log_token(monkeypatch,caplog):
+    import requests
+    from telegram.client import TelegramClient
+    def failed(*a,**kw):
+        raise requests.RequestException("https://api.telegram.org/botPRIVATE_TOKEN/sendMessage")
+    monkeypatch.setattr("telegram.client.requests.post",failed)
+    assert not TelegramClient("PRIVATE_TOKEN","chat").send_text("test")
+    assert "PRIVATE_TOKEN" not in caplog.text
+    assert "RequestException" in caplog.text
+
+def test_telegram_missing_credentials_no_network(monkeypatch):
+    from telegram.client import TelegramClient
+    def unexpected(*a,**kw):
+        raise AssertionError("Network must not be called")
+    monkeypatch.setattr("telegram.client.requests.post",unexpected)
+    assert not TelegramClient("  ","chat").send_text("test")
+
+@pytest.mark.parametrize("success,exit_code",[(True,0),(False,1)])
+def test_telegram_cli_exit_and_no_collector(monkeypatch,success,exit_code):
+    import main
+    calls=[]
+    monkeypatch.setattr("sys.argv",["main.py","test-telegram"])
+    monkeypatch.setattr(main,"configure_logging",lambda settings:logging.getLogger("test"))
+    def unexpected():
+        raise AssertionError("Telegram test must not collect fixtures")
+    monkeypatch.setattr(main,"FotMobCollector",unexpected)
+    def send(self,text):
+        calls.append(text)
+        return success
+    monkeypatch.setattr("telegram.client.TelegramClient.send_text",send)
+    assert main.main()==exit_code
+    assert len(calls)==1 and "bağlantı testidir" in calls[0]
+

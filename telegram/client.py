@@ -12,7 +12,8 @@ class TelegramClient:
     """Sends messages and documents only when credentials are configured."""
 
     def __init__(self, token: str | None, chat_id: str | None) -> None:
-        self.token, self.chat_id = token, chat_id
+        self.token = (token or "").strip()
+        self.chat_id = (chat_id or "").strip()
 
     @property
     def enabled(self) -> bool:
@@ -64,14 +65,22 @@ class TelegramClient:
                 timeout=30,
             )
         except requests.RequestException as exc:
-            logger.warning("telegram_request_failed method=%s error=%s", method, exc)
+            # Request exception strings can contain the bot token in the URL.
+            logger.warning("telegram_request_failed method=%s error_type=%s", method, type(exc).__name__)
             return False
-        if not response.ok:
+        try:
+            body = response.json()
+        except ValueError:
+            logger.warning("telegram_send_failed method=%s status=%s reason=invalid_json", method, response.status_code)
+            return False
+        if not response.ok or not isinstance(body, dict) or body.get("ok") is not True:
+            code = body.get("error_code", response.status_code) if isinstance(body, dict) else response.status_code
+            reason = {400: "invalid_chat_id_or_request", 401: "invalid_bot_token",
+                      403: "bot_blocked_or_missing_chat_permissions", 404: "invalid_bot_endpoint",
+                      429: "rate_limited"}.get(code, "telegram_api_error")
             logger.warning(
-                "telegram_send_failed method=%s status=%s body=%s",
-                method,
-                response.status_code,
-                response.text[:500],
+                "telegram_send_failed method=%s status=%s reason=%s", method, response.status_code, reason,
             )
             return False
+        logger.info("telegram_send_success method=%s", method)
         return True
