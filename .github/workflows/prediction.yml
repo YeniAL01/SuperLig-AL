@@ -1,31 +1,15 @@
-name: Super Lig Prediction
+name: Prediction
 
 on:
-  workflow_dispatch:
-
   schedule:
-    # Süper Lig maçlarının bulunduğu günlerde temel kontrol.
-    # Ağır analiz yalnızca Python tarafında T-60 penceresinde başlar.
-    #
-    # GitHub Actions cron UTC kullanır.
-    #
-    # Cuma
-    - cron: "*/5 15-20 * * 5"
-
-    # Cumartesi
-    - cron: "*/5 10-20 * * 6"
-
-    # Pazar
-    - cron: "*/5 10-20 * * 0"
-
-    # Pazartesi
-    - cron: "*/5 15-20 * * 1"
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: super-lig-prediction
+  group: superlig-state
   cancel-in-progress: false
 
 jobs:
@@ -44,27 +28,20 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run tests
-        run: |
-          pytest -q
+        run: pytest -q
 
-      - name: Build prediction state
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python main.py predict
+      - name: Build and reserve predictions
+        run: python main.py predict
 
-      - name: Persist prediction state before Telegram
+      - name: Persist reservation before Telegram
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name "superlig-al[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/
+          git add data
 
           if git diff --cached --quiet; then
             echo "No prediction state changes to commit."
@@ -73,24 +50,29 @@ jobs:
             git push
           fi
 
-      - name: Deliver Telegram predictions
+      - name: Deliver reserved predictions
+        id: deliver
+        continue-on-error: true
+        run: python main.py deliver
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python main.py deliver
+          TELEGRAM_PREDICTION_BOT_TOKEN: ${{ secrets.TELEGRAM_PREDICTION_BOT_TOKEN }}
+          TELEGRAM_PREDICTION_CHAT_ID: ${{ secrets.TELEGRAM_PREDICTION_CHAT_ID }}
 
-      - name: Persist Telegram delivery result
+      - name: Persist delivery result
         if: always()
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name "superlig-al[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/
+          git add data
 
           if git diff --cached --quiet; then
             echo "No delivery state changes to commit."
           else
-            git commit -m "chore: persist prediction delivery"
+            git commit -m "chore: update Telegram delivery state"
             git push
           fi
+
+      - name: Fail workflow when Telegram delivery failed
+        if: steps.deliver.outcome == 'failure'
+        run: exit 1
