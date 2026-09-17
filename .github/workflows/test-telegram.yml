@@ -1,17 +1,19 @@
-name: Test Telegram
+name: Telegram connection test
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  test:
+  telegram-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
+        with: {python-version: '3.12'}
       - run: pip install -r requirements.txt
-      - run: python main.py test
+      - name: Send Telegram test message
+        run: python main.py test-telegram
         env:
           TELEGRAM_PREDICTION_BOT_TOKEN: ${{ secrets.TELEGRAM_PREDICTION_BOT_TOKEN }}
           TELEGRAM_PREDICTION_CHAT_ID: ${{ secrets.TELEGRAM_PREDICTION_CHAT_ID }}
+
