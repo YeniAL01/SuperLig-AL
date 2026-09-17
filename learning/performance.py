@@ -22,10 +22,28 @@ MARKET_LABELS = {
 
 def score_prediction(
     prediction: dict,
-    home_goals: int,
-    away_goals: int,
+    home_goals: int | dict,
+    away_goals: int | None = None,
 ) -> dict:
     """Score one settled forecast without changing its pre-match snapshot."""
+    if isinstance(home_goals, dict):
+        result_row = home_goals
+        home_goals = int(
+            result_row.get(
+                "home_goals",
+                result_row.get("actual_home", 0),
+            )
+        )
+        away_goals = int(
+            result_row.get(
+                "away_goals",
+                result_row.get("actual_away", 0),
+            )
+        )
+
+    if away_goals is None:
+        raise TypeError("away_goals is required")
+
     label = (
         "HOME"
         if home_goals > away_goals
@@ -39,7 +57,10 @@ def score_prediction(
     predicted_outcome = prediction.get("outcome")
 
     if predicted_outcome not in LABELS:
-        predicted_team = prediction.get("predicted_winner")
+        predicted_team = (
+            prediction.get("predicted_winner")
+            or prediction.get("winner")
+        )
 
         if len(teams) == 2:
             if predicted_team == teams[0]:
@@ -242,19 +263,22 @@ def _group(
         if "score_correct" in row
     ]
 
+    winner_accuracy = (
+        sum(
+            bool(
+                row["winner_correct"]
+            )
+            for row in winner_rows
+        )
+        / len(winner_rows)
+        if winner_rows
+        else None
+    )
+
     return {
         "matches": count,
-        "winner_accuracy": (
-            sum(
-                bool(
-                    row["winner_correct"]
-                )
-                for row in winner_rows
-            )
-            / len(winner_rows)
-            if winner_rows
-            else None
-        ),
+        "accuracy": winner_accuracy,
+        "winner_accuracy": winner_accuracy,
         "exact_score_accuracy": (
             sum(
                 bool(
@@ -464,9 +488,7 @@ def publication_stats(
                 else None
             ),
     }
-
-
-def market_performance(
+    def market_performance(
     predictions: list[dict],
     results: list[dict],
     *,
