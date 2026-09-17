@@ -282,14 +282,9 @@ def normalize_learning_state(
         "updated_at"
     )
 
-    model_weights_state = state.get(
-        "model_weights"
-    )
-
+    model_weights_state = state.get("model_weights")
     if isinstance(model_weights_state, dict):
-        normalized["model_weights"] = deepcopy(
-            model_weights_state
-        )
+        normalized["model_weights"] = deepcopy(model_weights_state)
 
     old_markets = state.get("markets", {})
 
@@ -827,7 +822,8 @@ def build_learning_samples(
                         settled_iso,
                 }
             )
-                return sorted(
+
+    return sorted(
         samples,
         key=lambda row: (
             timestamp(
@@ -950,13 +946,9 @@ def _factor_quality(
             continue
 
         if row["correct"]:
-            correct_values.append(
-                value
-            )
+            correct_values.append(value)
         else:
-            wrong_values.append(
-                value
-            )
+            wrong_values.append(value)
 
     correct_mean = (
         sum(correct_values)
@@ -1279,18 +1271,8 @@ def update_learning_state(
             "recent_30"
         ] = recent_30
 
-        # Backward-compatible direct aliases.
-        market_state[
-            "recent_20_error_rate"
-        ] = recent_20[
-            "error_rate"
-        ]
-
-        market_state[
-            "recent_30_error_rate"
-        ] = recent_30[
-            "error_rate"
-        ]
+        market_state["recent_20_error_rate"] = recent_20["error_rate"]
+        market_state["recent_30_error_rate"] = recent_30["error_rate"]
 
         market_state[
             "calibration"
