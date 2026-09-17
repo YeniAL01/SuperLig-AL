@@ -1,49 +1,256 @@
-"""Regularized expert weights from immutable pre-match forecasts."""
-from datetime import datetime
-from math import exp, isfinite, log
+"""Validated result ledger and time-filtered rolling team features."""
 
-LABELS = ("HOME", "DRAW", "AWAY")
+from datetime import UTC, datetime, timedelta
 
-def timestamp(value: str) -> datetime:
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        raise ValueError("Timezone is required")
-    return dt
+from learning.adaptive import timestamp
+from prediction.engine import TeamForm
 
-def valid_probs(probs: object) -> bool:
-    return (isinstance(probs, dict) and set(probs) == set(LABELS)
-            and all(isinstance(v, (float, int)) and isfinite(v) and 0 < v < 1
-                    for v in probs.values()) and abs(sum(probs.values())-1) < 1e-6)
 
-def eligible(records: list, cutoff: datetime) -> list:
-    selected, seen = [], set()
-    for r in records:
+RESULT_CONFLICT_FIELDS = (
+    "home_team",
+    "away_team",
+    "home_goals",
+    "away_goals",
+)
+
+
+def validate_result(row: dict) -> dict:
+    """Validate and normalize a settled match result."""
+    r = dict(row)
+
+    for name in ("fixture_id", "home_team", "away_team", "kickoff"):
+        if not r.get(name):
+            raise ValueError(f"Missing {name}")
+
+    if r["home_team"] == r["away_team"]:
+        raise ValueError("Teams must differ")
+
+    start = timestamp(r["kickoff"])
+
+    for name in ("home_goals", "away_goals"):
+        if name not in r:
+            raise ValueError(f"Missing {name}")
+
+        value = r[name]
+
+        if isinstance(value, bool):
+            raise ValueError(f"Invalid {name}")
+
         try:
-            key = str(r["fixture_id"])
-            if (key in seen or r.get("model_version") != "adaptive-v2" or
-                    not timestamp(r["created_at"]) < timestamp(r["kickoff"]) <
-                    timestamp(r["settled_at"]) <= cutoff):
-                continue
-            if r.get("actual_outcome") not in LABELS:
-                continue
-            selected.append(r)
-            seen.add(key)
-        except (KeyError, ValueError, TypeError):
+            integer_value = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid {name}") from exc
+
+        if str(value).strip() != str(integer_value):
+            raise ValueError(f"Invalid {name}")
+
+        if not 0 <= integer_value <= 30:
+            raise ValueError(f"Invalid {name}")
+
+        r[name] = integer_value
+
+    r.setdefault(
+        "available_at",
+        (start + timedelta(hours=3)).isoformat(),
+    )
+
+    if timestamp(r["available_at"]) <= start:
+        raise ValueError("Result cannot be available before kickoff")
+
+    r["fixture_id"] = str(r["fixture_id"])
+
+    return r
+
+
+def _conflict_signature(existing: dict, incoming: dict) -> dict:
+    """Build a stable representation of a provider correction."""
+    changed_fields = [
+        name
+        for name in RESULT_CONFLICT_FIELDS
+        if existing.get(name) != incoming.get(name)
+    ]
+
+    return {
+        "fixture_id": incoming["fixture_id"],
+        "existing": {
+            name: existing.get(name)
+            for name in RESULT_CONFLICT_FIELDS
+        },
+        "incoming": {
+            name: incoming.get(name)
+            for name in RESULT_CONFLICT_FIELDS
+        },
+        "changed_fields": changed_fields,
+    }
+
+
+def _conflict_already_recorded(conflicts: list, signature: dict) -> bool:
+    """Avoid writing the same provider conflict on every workflow run."""
+    return any(
+        str(conflict.get("fixture_id")) == str(signature["fixture_id"])
+        and conflict.get("existing") == signature["existing"]
+        and conflict.get("incoming") == signature["incoming"]
+        for conflict in conflicts
+    )
+
+
+def merge_results(
+    existing: list,
+    incoming: list,
+    conflicts: list | None = None,
+) -> list:
+    """Merge provider results without letting one correction stop the system.
+
+    Existing settled results remain authoritative.
+
+    If the provider later changes a team name or score for an already stored
+    fixture, the original stored result is preserved and the disagreement is
+    written to the optional ``conflicts`` ledger.
+
+    This prevents one historical provider correction from blocking:
+    - new result ingestion,
+    - new predictions,
+    - performance evaluation,
+    - adaptive learning.
+
+    Duplicate conflict entries are not created on later workflow runs.
+    """
+    indexed: dict[str, dict] = {}
+
+    for row in existing:
+        validated = validate_result(row)
+        indexed[validated["fixture_id"]] = validated
+
+    for row in incoming:
+        result = validate_result(row)
+        fixture_id = result["fixture_id"]
+
+        old = indexed.get(fixture_id)
+
+        if old is None:
+            indexed[fixture_id] = result
             continue
-    return sorted(selected, key=lambda r: timestamp(r["settled_at"]))[-300:]
 
-def model_weights(records: list, names: list[str], cutoff: datetime) -> dict:
-    rows = eligible(records, cutoff)
-    scores = {}
-    for name in names:
-        loss, mass = 20 * log(3), 20.
-        for age, row in enumerate(reversed(rows)):
-            p = row.get("component_probabilities", {}).get(name)
-            if valid_probs(p):
-                weight = .99 ** age
-                loss += -log(p[row["actual_outcome"]]) * weight
-                mass += weight
-        scores[name] = exp(-3 * loss / mass)
-    total = sum(scores.values())
-    return {name: .1/len(names) + .9*value/total for name, value in scores.items()}
+        signature = _conflict_signature(old, result)
 
+        if not signature["changed_fields"]:
+            # Same settled fact. Keep the already persisted version.
+            continue
+
+        if conflicts is not None and not _conflict_already_recorded(
+            conflicts,
+            signature,
+        ):
+            conflicts.append(
+                {
+                    **signature,
+                    "detected_at": datetime.now(UTC).isoformat(),
+                    "status": "unresolved",
+                    "resolution": None,
+                }
+            )
+
+        # Never silently overwrite a settled historical fact.
+        # The conflict can later be reviewed/resolved independently.
+        continue
+
+    return sorted(
+        indexed.values(),
+        key=lambda r: (
+            timestamp(r["kickoff"]),
+            r["fixture_id"],
+        ),
+    )
+
+
+def forms(
+    results: list,
+    home: str,
+    away: str,
+    cutoff,
+) -> tuple:
+    """Build rolling pre-match team form without future-data leakage."""
+    prior = sorted(
+        (
+            r
+            for r in results
+            if timestamp(r["available_at"]) < cutoff
+        ),
+        key=lambda r: (
+            timestamp(r["kickoff"]),
+            str(r["fixture_id"]),
+        ),
+    )
+
+    ratings: dict[str, float] = {}
+    histories: dict[str, list[tuple[int, int]]] = {}
+
+    for r in prior:
+        h = r["home_team"]
+        a = r["away_team"]
+
+        hg = r["home_goals"]
+        ag = r["away_goals"]
+
+        rh = ratings.get(h, 1500.0)
+        ra = ratings.get(a, 1500.0)
+
+        expected = 1 / (1 + 10 ** ((ra - rh - 65) / 400))
+
+        actual = (
+            1.0
+            if hg > ag
+            else 0.0
+            if hg < ag
+            else 0.5
+        )
+
+        delta = 20 * (actual - expected)
+
+        ratings[h] = rh + delta
+        ratings[a] = ra - delta
+
+        histories.setdefault(h, []).append((hg, ag))
+        histories.setdefault(a, []).append((ag, hg))
+
+    def team(name: str) -> TeamForm:
+        rows = histories.get(name, [])[-10:]
+        n = len(rows)
+
+        if not n:
+            return TeamForm(
+                1.35,
+                1.35,
+                1.0,
+                0,
+                elo=ratings.get(name, 1500.0),
+            )
+
+        goals_for = sum(
+            scored
+            for scored, _ in rows
+        ) / n
+
+        goals_against = sum(
+            conceded
+            for _, conceded in rows
+        ) / n
+
+        points_per_game = sum(
+            3
+            if scored > conceded
+            else 1
+            if scored == conceded
+            else 0
+            for scored, conceded in rows
+        ) / n
+
+        return TeamForm(
+            goals_for,
+            goals_against,
+            points_per_game,
+            n,
+            elo=ratings.get(name, 1500.0),
+        )
+
+    return team(home), team(away)
