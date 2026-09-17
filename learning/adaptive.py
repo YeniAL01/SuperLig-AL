@@ -221,6 +221,8 @@ def _default_market_state() -> dict:
         "total_correct": 0,
         "total_wrong": 0,
         "season_accuracy": None,
+        "recent_20_error_rate": None,
+        "recent_30_error_rate": None,
         "recent_20": {
             "samples": 0,
             "correct": 0,
@@ -280,6 +282,15 @@ def normalize_learning_state(
         "updated_at"
     )
 
+    model_weights_state = state.get(
+        "model_weights"
+    )
+
+    if isinstance(model_weights_state, dict):
+        normalized["model_weights"] = deepcopy(
+            model_weights_state
+        )
+
     old_markets = state.get("markets", {})
 
     if isinstance(old_markets, dict):
@@ -299,6 +310,8 @@ def normalize_learning_state(
                 "total_correct",
                 "total_wrong",
                 "season_accuracy",
+                "recent_20_error_rate",
+                "recent_30_error_rate",
                 "status",
                 "last_review_at",
                 "last_adapted_at",
@@ -814,8 +827,7 @@ def build_learning_samples(
                         settled_iso,
                 }
             )
-
-    return sorted(
+                return sorted(
         samples,
         key=lambda row: (
             timestamp(
@@ -938,9 +950,13 @@ def _factor_quality(
             continue
 
         if row["correct"]:
-            correct_values.append(value)
+            correct_values.append(
+                value
+            )
         else:
-            wrong_values.append(value)
+            wrong_values.append(
+                value
+            )
 
     correct_mean = (
         sum(correct_values)
@@ -1262,6 +1278,19 @@ def update_learning_state(
         market_state[
             "recent_30"
         ] = recent_30
+
+        # Backward-compatible direct aliases.
+        market_state[
+            "recent_20_error_rate"
+        ] = recent_20[
+            "error_rate"
+        ]
+
+        market_state[
+            "recent_30_error_rate"
+        ] = recent_30[
+            "error_rate"
+        ]
 
         market_state[
             "calibration"
