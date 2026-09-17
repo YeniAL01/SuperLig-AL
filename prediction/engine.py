@@ -6,6 +6,7 @@ from math import exp, factorial
 
 from app.models import Fixture, Prediction
 from learning.adaptive import (
+    DEFAULT_FACTORS,
     calibrated_confidence,
     factor_snapshot,
     market_learning,
@@ -360,16 +361,12 @@ def _normalize_probabilities(
 ) -> dict:
     """Protect persisted forecasts from floating-point drift."""
     cleaned = {
-        label: max(
+        key: max(
             0.0,
-            float(
-                probs.get(
-                    label,
-                    0.0,
-                )
-            ),
+            float(value),
         )
-        for label in LABELS
+        for key, value
+        in probs.items()
     }
 
     total = sum(
@@ -377,19 +374,22 @@ def _normalize_probabilities(
     )
 
     if total <= 0:
+        count = len(cleaned)
+
+        if count <= 0:
+            return {}
+
         return {
-            label: 1.0 / len(
-                LABELS
-            )
-            for label in LABELS
+            key: 1.0 / count
+            for key in cleaned
         }
 
     return {
-        label: (
-            cleaned[label]
-            / total
+        key: (
+            value / total
         )
-        for label in LABELS
+        for key, value
+        in cleaned.items()
     }
 
 
@@ -446,24 +446,6 @@ def _goals_signal(
     )
 
 
-def _availability_signal(
-    home: TeamForm,
-    away: TeamForm,
-) -> float:
-    minimum_samples = min(
-        home.samples,
-        away.samples,
-    )
-
-    return max(
-        0.0,
-        min(
-            1.0,
-            minimum_samples / 10.0,
-        ),
-    )
-
-
 def _model_signal(
     probs: dict,
 ) -> float:
@@ -496,7 +478,12 @@ def _build_factor_snapshot(
     lineup_verified: bool,
     probs: dict,
 ) -> dict:
-    """Create factors using only evidence actually available."""
+    """Create factors using only evidence actually available.
+
+    availability intentionally remains neutral until the collector
+    supplies verified player-availability/injury information. Historical
+    sample count must never be represented as player availability.
+    """
     return factor_snapshot(
         form=_form_signal(
             home,
@@ -516,16 +503,203 @@ def _build_factor_snapshot(
             if lineup_verified
             else 0.0
         ),
-        availability=_availability_signal(
-            home,
-            away,
-        ),
+        availability=0.0,
         # No verified odds provider is connected here.
         # Neutral zero means odds cannot influence the forecast.
         odds_support=0.0,
         model_signal=_model_signal(
             probs
         ),
+    )
+
+
+def _learning_strength(
+    factors: dict,
+    market_state: dict,
+) -> float:
+    """Return a bounded probability-sharpness multiplier.
+
+    The adaptive layer learns factor importance independently for every
+    market. The multiplier compares the learned weighted evidence strength
+    with the baseline factor weights.
+
+    This changes probability strength without inventing a new directional
+    signal. Therefore learning can make an existing market view more or
+    less decisive, while the underlying Poisson/Elo/xG model remains
+    responsible for the direction of the prediction.
+    """
+    if not isinstance(
+        factors,
+        dict,
+    ):
+        return 1.0
+
+    if not isinstance(
+        market_state,
+        dict,
+    ):
+        return 1.0
+
+    try:
+        total_samples = int(
+            market_state.get(
+                "total_samples",
+                0,
+            )
+            or 0
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        total_samples = 0
+
+    # Until the agreed minimum adaptation sample size is reached,
+    # learning observes only and cannot alter forecast probabilities.
+    if total_samples < 30:
+        return 1.0
+
+    learned_weights = market_state.get(
+        "weights",
+        {},
+    )
+
+    if not isinstance(
+        learned_weights,
+        dict,
+    ):
+        return 1.0
+
+    baseline_strength = 0.0
+    learned_strength = 0.0
+    baseline_weight_total = 0.0
+    learned_weight_total = 0.0
+
+    for factor, baseline_weight in (
+        DEFAULT_FACTORS.items()
+    ):
+        try:
+            value = abs(
+                float(
+                    factors.get(
+                        factor,
+                        0.0,
+                    )
+                )
+            )
+
+            baseline = abs(
+                float(
+                    baseline_weight
+                )
+            )
+
+            learned = abs(
+                float(
+                    learned_weights.get(
+                        factor,
+                        baseline_weight,
+                    )
+                )
+            )
+
+        except (
+            TypeError,
+            ValueError,
+        ):
+            continue
+
+        baseline_strength += (
+            value * baseline
+        )
+
+        learned_strength += (
+            value * learned
+        )
+
+        baseline_weight_total += (
+            baseline
+        )
+
+        learned_weight_total += (
+            learned
+        )
+
+    if (
+        baseline_weight_total <= 0
+        or learned_weight_total <= 0
+    ):
+        return 1.0
+
+    baseline_mean = (
+        baseline_strength
+        / baseline_weight_total
+    )
+
+    learned_mean = (
+        learned_strength
+        / learned_weight_total
+    )
+
+    if baseline_mean <= 1e-12:
+        return 1.0
+
+    ratio = (
+        learned_mean
+        / baseline_mean
+    )
+
+    # Keep the effect deliberately small. Factor weights themselves are
+    # already bounded by adaptive.py; this second bound prevents a single
+    # learning cycle from causing abrupt probability changes.
+    return max(
+        0.95,
+        min(
+            1.05,
+            ratio,
+        ),
+    )
+
+
+def _apply_learning_weights(
+    probabilities_map: dict,
+    factors: dict,
+    market_state: dict,
+) -> dict:
+    """Apply learned factor weights to market probability sharpness."""
+    normalized = _normalize_probabilities(
+        probabilities_map
+    )
+
+    if not normalized:
+        return normalized
+
+    strength = _learning_strength(
+        factors,
+        market_state,
+    )
+
+    if abs(
+        strength - 1.0
+    ) < 1e-12:
+        return normalized
+
+    # Exponentiation preserves ordering and normalization while allowing
+    # learned evidence strength to sharpen (>1) or flatten (<1) the market.
+    adjusted = {
+        key: (
+            max(
+                1e-12,
+                probability,
+            )
+            ** strength
+        )
+        for key, probability
+        in normalized.items()
+    }
+
+    return _normalize_probabilities(
+        adjusted
     )
 
 
@@ -536,23 +710,31 @@ def _market_payload(
     factors: dict,
 ) -> dict:
     """Build one immutable market prediction snapshot."""
+    state = market_learning(
+        learning_state,
+        market,
+    )
+
+    learned_probabilities = (
+        _apply_learning_weights(
+            probabilities_map,
+            factors,
+            state,
+        )
+    )
+
     selection = max(
-        probabilities_map,
-        key=probabilities_map.get,
+        learned_probabilities,
+        key=learned_probabilities.get,
     )
 
     raw_confidence = (
         float(
-            probabilities_map[
+            learned_probabilities[
                 selection
             ]
         )
         * 100.0
-    )
-
-    state = market_learning(
-        learning_state,
-        market,
     )
 
     confidence = calibrated_confidence(
@@ -573,6 +755,11 @@ def _market_payload(
         "probabilities": {
             key: float(value)
             for key, value
+            in learned_probabilities.items()
+        },
+        "base_probabilities": {
+            key: float(value)
+            for key, value
             in probabilities_map.items()
         },
         "factors": dict(
@@ -588,6 +775,13 @@ def _market_payload(
                 0,
             )
             or 0
+        ),
+        "learning_strength": round(
+            _learning_strength(
+                factors,
+                state,
+            ),
+            6,
         ),
     }
 
@@ -703,8 +897,33 @@ class PredictionEngine:
             for label in LABELS
         }
 
-        probs = _normalize_probabilities(
-            combined
+        base_1x2_probs = (
+            _normalize_probabilities(
+                combined
+            )
+        )
+
+        factors = _build_factor_snapshot(
+            home,
+            away,
+            home_rate,
+            away_rate,
+            lineup_verified,
+            base_1x2_probs,
+        )
+
+        # Apply market-level learned factor weights to 1X2 before the score
+        # distribution is rebuilt. This keeps the score grid consistent
+        # with the final learned 1X2 probabilities.
+        one_x_two_state = market_learning(
+            self.learning_state,
+            "1x2",
+        )
+
+        probs = _apply_learning_weights(
+            base_1x2_probs,
+            factors,
+            one_x_two_state,
         )
 
         winner = max(
@@ -713,7 +932,7 @@ class PredictionEngine:
         )
 
         # Reweight the Poisson score grid so that the score distribution
-        # remains consistent with the adaptive 1X2 probabilities.
+        # remains consistent with the final adaptive 1X2 probabilities.
         joint = {}
 
         for score, probability in (
@@ -774,43 +993,75 @@ class PredictionEngine:
             key=joint.get,
         )
 
-        ou25 = ou25_probabilities(
+        base_ou25 = ou25_probabilities(
             joint
         )
 
-        btts = btts_probabilities(
+        base_btts = btts_probabilities(
             joint
         )
 
-        factors = _build_factor_snapshot(
-            home,
-            away,
-            home_rate,
-            away_rate,
-            lineup_verified,
-            probs,
-        )
-
+        # 1X2 has already received its learned factor adjustment above.
+        # _market_payload receives the pre-learning 1X2 probabilities so
+        # it performs the same deterministic adjustment exactly once.
         markets = {
             "1x2": _market_payload(
-                probs,
+                base_1x2_probs,
                 self.learning_state,
                 "1x2",
                 factors,
             ),
             "ou25": _market_payload(
-                ou25,
+                base_ou25,
                 self.learning_state,
                 "ou25",
                 factors,
             ),
             "btts": _market_payload(
-                btts,
+                base_btts,
                 self.learning_state,
                 "btts",
                 factors,
             ),
         }
+
+        # Keep top-level probabilities synchronized with the final learned
+        # 1X2 market probabilities.
+        final_1x2_probs = dict(
+            markets[
+                "1x2"
+            ][
+                "probabilities"
+            ]
+        )
+
+        winner = max(
+            final_1x2_probs,
+            key=final_1x2_probs.get,
+        )
+
+        # The ordering-preserving learning transform should not change the
+        # winner, but choose the score again defensively from the final
+        # 1X2 selection.
+        compatible_scores = [
+            candidate
+            for candidate in joint
+            if outcome(
+                *candidate
+            )
+            == winner
+        ]
+
+        if not compatible_scores:
+            raise ValueError(
+                "No score compatible with "
+                "final predicted outcome"
+            )
+
+        score = max(
+            compatible_scores,
+            key=joint.get,
+        )
 
         # Keep the legacy top-level confidence synchronized with the
         # calibrated 1X2 confidence because publishability currently
@@ -860,7 +1111,7 @@ class PredictionEngine:
                 "Skor, seçilen maç sonucuyla "
                 "uyumlu en olası skordur."
             ),
-            probabilities=probs,
+            probabilities=final_1x2_probs,
             component_probabilities=components,
             model_weights=weights,
             kickoff=fixture.start.isoformat(),
