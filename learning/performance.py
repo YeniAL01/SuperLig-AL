@@ -341,6 +341,7 @@ def _group(
 
     return {
         "matches": count,
+        "count": count,
         "accuracy":
             winner_accuracy,
         "winner_accuracy":
