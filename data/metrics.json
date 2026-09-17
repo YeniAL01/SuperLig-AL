@@ -7,6 +7,22 @@
     "log_loss": null,
     "brier_score": null
   },
+  "eligible": {
+    "matches": 0,
+    "accuracy": null,
+    "accuracy_95pct_interval": null,
+    "exact_score_accuracy": null,
+    "log_loss": null,
+    "brier_score": null
+  },
+  "delivered": {
+    "matches": 0,
+    "accuracy": null,
+    "accuracy_95pct_interval": null,
+    "exact_score_accuracy": null,
+    "log_loss": null,
+    "brier_score": null
+  },
   "published": {
     "matches": 0,
     "accuracy": null,
@@ -15,6 +31,8 @@
     "log_loss": null,
     "brier_score": null
   },
+  "eligible_coverage": null,
+  "delivery_coverage": null,
   "coverage": null,
   "reliability": []
 }
