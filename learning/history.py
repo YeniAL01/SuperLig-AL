@@ -1,7 +1,8 @@
 """Validated result ledger and time-filtered rolling team features."""
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from learning.adaptive import timestamp
 from prediction.engine import TeamForm
+
 
 def validate_result(row: dict) -> dict:
     r = dict(row)
@@ -16,25 +17,45 @@ def validate_result(row: dict) -> dict:
         if isinstance(value, bool) or str(value).strip() != str(int(value)) or not 0 <= int(value) <= 30:
             raise ValueError(f"Invalid {name}")
         r[name] = int(value)
-    # Date-only CSV sources should supply end-of-day available_at.
     r.setdefault("available_at", (start + timedelta(hours=3)).isoformat())
     if timestamp(r["available_at"]) <= start:
         raise ValueError("Result cannot be available before kickoff")
     r["fixture_id"] = str(r["fixture_id"])
     return r
 
-def merge_results(existing: list, incoming: list) -> list:
+
+def merge_results(existing: list, incoming: list, conflicts: list | None = None) -> list:
+    """Merge new results without allowing a provider correction to stop the run.
+
+    Existing settled facts remain authoritative. A conflicting provider row is
+    appended to ``conflicts`` when supplied, so it can be reviewed separately.
+    """
     indexed = {str(r["fixture_id"]): validate_result(r) for r in existing}
     for row in incoming:
         r = validate_result(row)
         old = indexed.get(r["fixture_id"])
         if old:
             fields = ("home_team", "away_team", "home_goals", "away_goals")
-            if any(old[k] != r[k] for k in fields):
-                raise ValueError(f"Conflicting result: {r['fixture_id']}")
-        else:
-            indexed[r["fixture_id"]] = r
+            changed = [name for name in fields if old[name] != r[name]]
+            if changed and conflicts is not None:
+                signature = {
+                    "fixture_id": r["fixture_id"],
+                    "existing": {name: old[name] for name in fields},
+                    "incoming": {name: r[name] for name in fields},
+                    "changed_fields": changed,
+                }
+                duplicate = any(
+                    c.get("fixture_id") == signature["fixture_id"]
+                    and c.get("existing") == signature["existing"]
+                    and c.get("incoming") == signature["incoming"]
+                    for c in conflicts
+                )
+                if not duplicate:
+                    conflicts.append({**signature, "detected_at": datetime.now(UTC).isoformat()})
+            continue
+        indexed[r["fixture_id"]] = r
     return sorted(indexed.values(), key=lambda r: (timestamp(r["kickoff"]), r["fixture_id"]))
+
 
 def forms(results: list, home: str, away: str, cutoff) -> tuple:
     prior = sorted((r for r in results if timestamp(r["available_at"]) < cutoff),
@@ -58,4 +79,3 @@ def forms(results: list, home: str, away: str, cutoff) -> tuple:
             sum(3 if h>a else 1 if h==a else 0 for h,a in rows)/n if n else 1.,
             n, elo=ratings.get(name, 1500.))
     return team(home), team(away)
-

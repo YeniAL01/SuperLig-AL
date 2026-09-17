@@ -15,10 +15,13 @@ from utils.logging import configure_logging
 
 def learn(settings, collector):
     logger, store = configure_logging(settings), JsonStore(settings.data_dir)
-    results = merge_results(store.read("results", []), collector.results(settings.league_id))
+    conflicts = store.read("result_conflicts", [])
+    results = merge_results(store.read("results", []), collector.results(settings.league_id), conflicts)
     store.write("results", results)
+    store.write("result_conflicts", conflicts)
     by_id = {str(r["fixture_id"]): r for r in results}
-    forecasts = store.read("forecasts", []) + store.read("predictions", [])
+    forecasts = store.read("forecasts", [])
+    delivery = store.read("delivery", {})
     records = store.read("performance", [])
     settled = {str(r["fixture_id"]) for r in records}
     added = 0
@@ -29,7 +32,8 @@ def learn(settings, collector):
         actual = by_id.get(key)
         if actual and p.get("home_team") and (
                 actual["home_team"] != p["home_team"] or actual["away_team"] != p["away_team"]):
-            raise ValueError(f"Forecast/result team mismatch: {key}")
+            logger.warning("settlement_skipped fixture_id=%s reason=team_mismatch", key)
+            continue
         if actual is None:
             try:
                 detail = collector.match(int(key))
@@ -42,7 +46,11 @@ def learn(settings, collector):
             except Exception as exc:
                 logger.warning("settlement_failed fixture_id=%s error=%s", key, type(exc).__name__)
                 continue
+        delivery_state = delivery.get(key)
+        delivered = isinstance(delivery_state, str) or (
+            isinstance(delivery_state, dict) and delivery_state.get("status") == "delivered")
         records.append({**p, **score_prediction(p, actual["home_goals"], actual["away_goals"]),
+                        "eligible": bool(p.get("publishable")), "delivered": delivered,
                         "actual_home": actual["home_goals"], "actual_away": actual["away_goals"],
                         "settled_at": actual["available_at"]})
         settled.add(key)
@@ -70,7 +78,7 @@ def _final_score(teams):
 
 def main():
     parser = argparse.ArgumentParser(description="SuperLig-AL")
-    parser.add_argument("command", choices=("predict","learn","test","test-telegram","backtest","import-history","metrics"))
+    parser.add_argument("command", choices=("predict","deliver","learn","test","test-telegram","backtest","import-history","metrics"))
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--output", type=Path, default=Path("reports/backtest.json"))
     args = parser.parse_args()
@@ -94,8 +102,10 @@ def main():
         from learning.backtest import read_csv, evaluate
         rows = read_csv(args.csv)
         if args.command == "import-history":
-            merged = merge_results(store.read("results", []), rows)
+            conflicts = store.read("result_conflicts", [])
+            merged = merge_results(store.read("results", []), rows, conflicts)
             store.write("results", merged)
+            store.write("result_conflicts", conflicts)
             print(f"Historical matches: {len(merged)}")
         else:
             report = evaluate(rows, settings.minimum_probability)
@@ -109,6 +119,8 @@ def main():
     logger, collector = configure_logging(settings), FotMobCollector()
     if args.command == "predict":
         PredictionService(settings, collector, logger).run()
+    elif args.command == "deliver":
+        return PredictionService(settings, collector, logger).deliver()
     elif args.command == "learn":
         learn(settings, collector)
     else:

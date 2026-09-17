@@ -2,6 +2,7 @@
 from math import log, sqrt
 from learning.adaptive import valid_probs, LABELS
 
+
 def score_prediction(prediction: dict, home_goals: int, away_goals: int) -> dict:
     label = "HOME" if home_goals > away_goals else "AWAY" if away_goals > home_goals else "DRAW"
     teams = prediction["fixture"].split(" - ")
@@ -18,9 +19,11 @@ def score_prediction(prediction: dict, home_goals: int, away_goals: int) -> dict
         result["brier_score"] = sum((p[k]-int(k==label))**2 for k in LABELS)
     return result
 
+
 def calibration(records: list) -> float:
     rows = [r for r in records if "winner_correct" in r][-100:]
     return sum(bool(r["winner_correct"]) for r in rows)/len(rows) if rows else .5
+
 
 def summarize(records: list) -> dict:
     def group(rows):
@@ -37,7 +40,9 @@ def summarize(records: list) -> dict:
                 "exact_score_accuracy": sum(r["score_correct"] for r in rows)/n if n else None,
                 "log_loss": sum(r["log_loss"] for r in scored)/len(scored) if scored else None,
                 "brier_score": sum(r["brier_score"] for r in scored)/len(scored) if scored else None}
-    published = [r for r in records if r.get("publishable")]
+
+    eligible = [r for r in records if r.get("eligible", r.get("publishable", False))]
+    delivered = [r for r in records if r.get("delivered", False)]
     bins = []
     for low, high in ((0,40),(40,50),(50,60),(60,70),(70,80),(80,90),(90,101)):
         rows = [r for r in records if low <= r["confidence"] < high]
@@ -45,6 +50,15 @@ def summarize(records: list) -> dict:
             bins.append({"range": [low, min(high,100)], "matches": len(rows),
                          "predicted": sum(r["confidence"] for r in rows)/len(rows)/100,
                          "observed": sum(r["winner_correct"] for r in rows)/len(rows)})
-    return {"all": group(records), "published": group(published),
-            "coverage": len(published)/len(records) if records else None, "reliability": bins}
-
+    total = len(records)
+    return {
+        "all": group(records),
+        "eligible": group(eligible),
+        "delivered": group(delivered),
+        # Backward-compatible alias. It now explicitly means eligible, not delivered.
+        "published": group(eligible),
+        "eligible_coverage": len(eligible)/total if total else None,
+        "delivery_coverage": len(delivered)/total if total else None,
+        "coverage": len(eligible)/total if total else None,
+        "reliability": bins,
+    }

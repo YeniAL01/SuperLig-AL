@@ -89,8 +89,13 @@ def test_simultaneous_games_do_not_train_each_other():
 def test_results_validation_conflicts_and_idempotence():
     rows=merge_results([], [result(1)])
     assert merge_results(rows,rows) == rows
-    with pytest.raises(ValueError):
-        merge_results(rows,[result(1,4)])
+    conflicts=[]
+    assert merge_results(rows,[result(1,4)],conflicts) == rows
+    assert len(conflicts) == 1
+    assert conflicts[0]["fixture_id"] == "1"
+    assert "home_goals" in conflicts[0]["changed_fields"]
+    assert merge_results(rows,[result(1,4)],conflicts) == rows
+    assert len(conflicts) == 1
     with pytest.raises(ValueError):
         validate_result({**result(1),"home_goals":-1})
     with pytest.raises(ValueError):
@@ -100,9 +105,13 @@ def test_results_validation_conflicts_and_idempotence():
 
 def test_metrics_and_empty_state():
     p=forecast().payload()
-    r={**p,**score_prediction(p,2,0),"publishable":True}
+    r={**p,**score_prediction(p,2,0),"publishable":True,"eligible":True,"delivered":False}
     summary=summarize([r])
     assert summary["coverage"] == 1
+    assert summary["eligible"]["matches"] == 1
+    assert summary["delivered"]["matches"] == 0
+    assert summary["eligible_coverage"] == 1
+    assert summary["delivery_coverage"] == 0
     assert summary["all"]["log_loss"] > 0
     assert summary["all"]["brier_score"] >= 0
     assert summarize([])["all"]["accuracy"] is None
@@ -215,7 +224,8 @@ def test_lock_reconciliation_and_no_unconfigured_delivery(tmp_path,monkeypatch):
     service.run()
     service.run()
     assert store.read("predictions",[]) == [p.payload()]
-    assert store.read("delivery",{}) == {}
+    state=store.read("delivery",{})[str(p.fixture_id)]
+    assert state["status"] == "attempting"
 
 def test_legacy_winner_scoring_all_outcomes():
     p={"fixture":"A - B","winner":"B","home_goals":0,"away_goals":1}
@@ -230,8 +240,7 @@ def test_no_match_summary_is_explicit(tmp_path,caplog):
     service=PredictionService(settings(tmp_path),OfflineCollector(),logging.getLogger("test"))
     service.run()
     assert "prediction_summary fixtures=0" in caplog.text
-    assert "delivery_disabled=1" in caplog.text
-    assert "no_telegram_message" in caplog.text
+    assert "delivery_reserved count=0" in caplog.text
 
 def test_outside_window_and_low_quality_reasons(tmp_path,caplog):
     caplog.set_level(logging.INFO)
@@ -291,3 +300,48 @@ def test_telegram_cli_exit_and_no_collector(monkeypatch,success,exit_code):
     assert main.main()==exit_code
     assert len(calls)==1 and "bağlantı testidir" in calls[0]
 
+
+
+def test_delivery_failure_returns_nonzero_and_is_persisted(tmp_path, monkeypatch):
+    from dataclasses import replace
+    cfg=settings(tmp_path)
+    p=replace(forecast(), kickoff=(datetime.now(UTC)+timedelta(minutes=10)).isoformat())
+    store=JsonStore(cfg.data_dir)
+    store.write("predictions", [p.payload()])
+    store.write("delivery", {str(p.fixture_id): {"status":"attempting","reserved_at":datetime.now(UTC).isoformat()}})
+    cfg=Settings(data_dir=cfg.data_dir,log_dir=cfg.log_dir,report_dir=cfg.report_dir,
+                 prediction_token="token",prediction_chat_id="chat")
+    monkeypatch.setattr("telegram.client.TelegramClient.send_prediction", lambda self, prediction: False)
+    service=PredictionService(cfg,OfflineCollector(),logging.getLogger("test"))
+    assert service.deliver() == 1
+    assert store.read("delivery",{})[str(p.fixture_id)]["status"] == "failed"
+
+
+def test_delivery_success_marks_delivered_and_is_not_retried(tmp_path, monkeypatch):
+    from dataclasses import replace
+    cfg=settings(tmp_path)
+    p=replace(forecast(), kickoff=(datetime.now(UTC)+timedelta(minutes=10)).isoformat())
+    store=JsonStore(cfg.data_dir)
+    store.write("predictions", [p.payload()])
+    store.write("delivery", {str(p.fixture_id): {"status":"attempting","reserved_at":datetime.now(UTC).isoformat()}})
+    cfg=Settings(data_dir=cfg.data_dir,log_dir=cfg.log_dir,report_dir=cfg.report_dir,
+                 prediction_token="token",prediction_chat_id="chat")
+    calls=[]
+    monkeypatch.setattr("telegram.client.TelegramClient.send_prediction", lambda self, prediction: calls.append(prediction) or True)
+    service=PredictionService(cfg,OfflineCollector(),logging.getLogger("test"))
+    assert service.deliver() == 0
+    assert service.deliver() == 0
+    assert len(calls) == 1
+    assert store.read("delivery",{})[str(p.fixture_id)]["status"] == "delivered"
+
+
+def test_learning_records_eligible_and_delivered_separately(tmp_path):
+    cfg=settings(tmp_path)
+    store=JsonStore(cfg.data_dir)
+    p=forecast().payload()
+    store.write("forecasts", [{**p,"publishable":True}])
+    store.write("delivery", {str(p["fixture_id"]): {"status":"delivered","delivered_at":START.isoformat()}})
+    assert learn(cfg,OfflineCollector([result(1)])) == 1
+    row=store.read("performance",[])[0]
+    assert row["eligible"] is True
+    assert row["delivered"] is True
