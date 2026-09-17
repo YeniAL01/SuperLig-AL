@@ -5,7 +5,11 @@ from datetime import UTC, datetime
 from math import exp, factorial
 
 from app.models import Fixture, Prediction
-from learning.adaptive import model_weights
+from learning.adaptive import (
+    factor_snapshot,
+    market_learning,
+    model_weights,
+)
 
 
 LABELS = ("HOME", "DRAW", "AWAY")
@@ -79,7 +83,7 @@ def score_grid(
 def probabilities(
     grid: dict,
 ) -> dict:
-    """Aggregate a score grid into HOME/DRAW/AWAY probabilities."""
+    """Aggregate score probabilities into HOME/DRAW/AWAY."""
     return {
         label: sum(
             probability
@@ -98,11 +102,90 @@ def probabilities(
     }
 
 
+def ou25_probabilities(
+    grid: dict,
+) -> dict:
+    """Calculate 2.5-goal over/under probabilities."""
+    over = sum(
+        probability
+        for (
+            home_goals,
+            away_goals,
+        ), probability
+        in grid.items()
+        if home_goals + away_goals >= 3
+    )
+
+    under = sum(
+        probability
+        for (
+            home_goals,
+            away_goals,
+        ), probability
+        in grid.items()
+        if home_goals + away_goals <= 2
+    )
+
+    total = over + under
+
+    if total <= 0:
+        return {
+            "OVER": 0.5,
+            "UNDER": 0.5,
+        }
+
+    return {
+        "OVER": over / total,
+        "UNDER": under / total,
+    }
+
+
+def btts_probabilities(
+    grid: dict,
+) -> dict:
+    """Calculate both-teams-to-score probabilities."""
+    yes = sum(
+        probability
+        for (
+            home_goals,
+            away_goals,
+        ), probability
+        in grid.items()
+        if home_goals > 0
+        and away_goals > 0
+    )
+
+    no = sum(
+        probability
+        for (
+            home_goals,
+            away_goals,
+        ), probability
+        in grid.items()
+        if home_goals == 0
+        or away_goals == 0
+    )
+
+    total = yes + no
+
+    if total <= 0:
+        return {
+            "YES": 0.5,
+            "NO": 0.5,
+        }
+
+    return {
+        "YES": yes / total,
+        "NO": no / total,
+    }
+
+
 def _expected_rates(
     home: TeamForm,
     away: TeamForm,
 ) -> tuple[float, float]:
     """Build conservative expected goal rates from pre-match form."""
+
     def shrink(
         value: float,
         samples: int,
@@ -210,7 +293,7 @@ def _xg_probabilities(
     home: TeamForm,
     away: TeamForm,
 ) -> dict | None:
-    """Return xG-based probabilities only when enough valid data exists."""
+    """Return xG-based probabilities only with enough valid data."""
     if (
         home.samples < 5
         or away.samples < 5
@@ -309,17 +392,209 @@ def _normalize_probabilities(
     }
 
 
+def _form_signal(
+    home: TeamForm,
+    away: TeamForm,
+) -> float:
+    difference = (
+        home.form_points
+        - away.form_points
+    )
+
+    return max(
+        -1.0,
+        min(
+            1.0,
+            difference / 3.0,
+        ),
+    )
+
+
+def _home_away_signal() -> float:
+    """Fixed home-field component already represented in the model."""
+    return 0.18
+
+
+def _elo_signal(
+    home: TeamForm,
+    away: TeamForm,
+) -> float:
+    return max(
+        -1.0,
+        min(
+            1.0,
+            (
+                home.elo
+                - away.elo
+            )
+            / 400.0,
+        ),
+    )
+
+
+def _goals_signal(
+    home_rate: float,
+    away_rate: float,
+) -> float:
+    return max(
+        -1.0,
+        min(
+            1.0,
+            (
+                home_rate
+                + away_rate
+                - 2.5
+            )
+            / 2.5,
+        ),
+    )
+
+
+def _lineup_signal(
+    lineup_verified: bool,
+) -> float:
+    return (
+        1.0
+        if lineup_verified
+        else 0.0
+    )
+
+
+def _availability_signal(
+    home: TeamForm,
+    away: TeamForm,
+) -> float:
+    minimum_samples = min(
+        home.samples,
+        away.samples,
+    )
+
+    return max(
+        0.0,
+        min(
+            1.0,
+            minimum_samples / 10.0,
+        ),
+    )
+
+
+def _model_signal(
+    probabilities_1x2: dict,
+) -> float:
+    ordered = sorted(
+        (
+            float(value)
+            for value
+            in probabilities_1x2.values()
+        ),
+        reverse=True,
+    )
+
+    if len(ordered) < 2:
+        return 0.0
+
+    return max(
+        0.0,
+        min(
+            1.0,
+            ordered[0]
+            - ordered[1],
+        ),
+    )
+
+
+def _factor_values(
+    home: TeamForm,
+    away: TeamForm,
+    home_rate: float,
+    away_rate: float,
+    lineup_verified: bool,
+    probabilities_1x2: dict,
+) -> dict:
+    """Immutable pre-match evidence snapshot.
+
+    Odds are intentionally neutral until a verified odds provider is
+    connected. They therefore cannot become the sole basis of a forecast.
+    """
+    return {
+        "form": _form_signal(
+            home,
+            away,
+        ),
+        "home_away":
+            _home_away_signal(),
+        "elo": _elo_signal(
+            home,
+            away,
+        ),
+        "goals": _goals_signal(
+            home_rate,
+            away_rate,
+        ),
+        "lineup": _lineup_signal(
+            lineup_verified,
+        ),
+        "availability":
+            _availability_signal(
+                home,
+                away,
+            ),
+        "odds_support": 0.0,
+        "model_signal":
+            _model_signal(
+                probabilities_1x2
+            ),
+    }
+
+
+def _market_payload(
+    probabilities_map: dict,
+) -> dict:
+    selection = max(
+        probabilities_map,
+        key=probabilities_map.get,
+    )
+
+    return {
+        "selection": selection,
+        "confidence": round(
+            float(
+                probabilities_map[
+                    selection
+                ]
+            )
+            * 100.0,
+            2,
+        ),
+        "probabilities": {
+            key: float(value)
+            for key, value
+            in probabilities_map.items()
+        },
+    }
+
+
 class PredictionEngine:
     """Generate immutable adaptive-v2 pre-match predictions."""
 
     def __init__(
         self,
         records: list | None = None,
+        learning_state: dict | None = None,
     ) -> None:
         self.records = (
             records
             if records is not None
             else []
+        )
+
+        self.learning_state = (
+            learning_state
+            if isinstance(
+                learning_state,
+                dict,
+            )
+            else {}
         )
 
     def predict(
@@ -331,9 +606,7 @@ class PredictionEngine:
         lineup_verified: bool = False,
         as_of: datetime | None = None,
     ) -> Prediction:
-        """Create one forecast using only information available pre-kickoff."""
-        # Legacy confidence is deliberately accepted for compatibility,
-        # but it must never override the model probability.
+        """Create one forecast using only pre-kickoff information."""
         _ = confidence
 
         as_of = (
@@ -390,9 +663,6 @@ class PredictionEngine:
         if xg is not None:
             components["xg"] = xg
 
-        # Existing adaptive-v2 learning remains authoritative here.
-        # It learns which probability experts have historically been
-        # better calibrated using settled pre-match forecasts.
         weights = model_weights(
             self.records,
             list(
@@ -411,10 +681,8 @@ class PredictionEngine:
             for label in LABELS
         }
 
-        probs = (
-            _normalize_probabilities(
-                combined
-            )
+        probs = _normalize_probabilities(
+            combined
         )
 
         winner = max(
@@ -422,8 +690,8 @@ class PredictionEngine:
             key=probs.get,
         )
 
-        # Reweight the original score grid so the selected score remains
-        # consistent with the selected 1X2 outcome.
+        # Reweight score probabilities so the score distribution remains
+        # consistent with the final adaptive 1X2 probabilities.
         joint = {}
 
         for score, probability in (
@@ -448,6 +716,22 @@ class PredictionEngine:
                 / denominator
             )
 
+        joint_total = sum(
+            joint.values()
+        )
+
+        if joint_total <= 0:
+            raise ValueError(
+                "Invalid adaptive score distribution"
+            )
+
+        joint = {
+            score: probability
+            / joint_total
+            for score, probability
+            in joint.items()
+        }
+
         compatible_scores = [
             score
             for score in joint
@@ -467,6 +751,98 @@ class PredictionEngine:
             compatible_scores,
             key=joint.get,
         )
+
+        # All three markets now come from the same internally consistent
+        # final score distribution.
+        ou25 = ou25_probabilities(
+            joint
+        )
+
+        btts = btts_probabilities(
+            joint
+        )
+
+        markets = {
+            "1x2": _market_payload(
+                probs
+            ),
+            "ou25": _market_payload(
+                ou25
+            ),
+            "btts": _market_payload(
+                btts
+            ),
+        }
+
+        raw_factors = _factor_values(
+            home,
+            away,
+            home_rate,
+            away_rate,
+            lineup_verified,
+            probs,
+        )
+
+        # Snapshot the factor state at prediction time. This is immutable
+        # historical evidence for later learning.
+        factors = factor_snapshot(
+            raw_factors
+        )
+
+        # Read the current learning metadata for each market without
+        # allowing an immature learning state to rewrite the core forecast.
+        #
+        # Automatic market adaptation becomes influential only after the
+        # learning layer has enough settled evidence according to its own
+        # thresholds.
+        market_learning_snapshot = {}
+
+        for market in (
+            "1x2",
+            "ou25",
+            "btts",
+        ):
+            learned = market_learning(
+                self.learning_state,
+                market,
+            )
+
+            if isinstance(
+                learned,
+                dict,
+            ):
+                market_learning_snapshot[
+                    market
+                ] = {
+                    "status":
+                        learned.get(
+                            "status",
+                            "collecting",
+                        ),
+                    "total_samples":
+                        learned.get(
+                            "total_samples",
+                            0,
+                        ),
+                    "weights":
+                        dict(
+                            learned.get(
+                                "weights",
+                                {},
+                            )
+                        ),
+                    "calibration_multiplier":
+                        learned.get(
+                            "calibration_multiplier",
+                            1.0,
+                        ),
+                }
+
+        factor_data = {
+            "values": factors,
+            "learning":
+                market_learning_snapshot,
+        }
 
         confidence_value = round(
             100
@@ -523,4 +899,7 @@ class PredictionEngine:
                 "adaptive-v2",
             score_probability=
                 joint[score],
+            markets=markets,
+            factor_snapshot=
+                factor_data,
         )
