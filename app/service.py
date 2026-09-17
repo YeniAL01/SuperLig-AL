@@ -10,6 +10,11 @@ from prediction.engine import PredictionEngine
 from telegram.client import TelegramClient
 
 
+ANALYSIS_WINDOW_MINUTES = 60
+LINEUP_CHECK_UNTIL_MINUTES = 30
+FINAL_PREDICTION_MINUTES = 15
+
+
 class PredictionService:
     def __init__(
         self,
@@ -25,7 +30,20 @@ class PredictionService:
         )
 
     def run(self) -> int:
-        """Build and persist forecasts only.
+        """Prepare pre-match state and build final immutable forecasts.
+
+        T-60:
+            Pre-match monitoring becomes active.
+
+        T-60 -> T-30:
+            Starting XI may be checked on scheduled workflow runs.
+
+        T-30:
+            Missing lineup stops being a blocker. The system continues
+            without a verified XI.
+
+        T-15:
+            The immutable final prediction is created.
 
         Telegram delivery remains a separate phase.
         """
@@ -39,6 +57,11 @@ class PredictionService:
 
         stats = dict(
             outside_window=0,
+            analysis_active=0,
+            lineup_checked=0,
+            lineup_verified=0,
+            lineup_fallback=0,
+            waiting_final_window=0,
             already_locked=0,
             build_failed=0,
             low_data=0,
@@ -91,6 +114,17 @@ class PredictionService:
             for row in forecasts + published
         }
 
+        analysis_state = self.store.read(
+            "pre_match_analysis",
+            {},
+        )
+
+        if not isinstance(
+            analysis_state,
+            dict,
+        ):
+            analysis_state = {}
+
         count = 0
 
         fixtures = self.collector.fixtures(
@@ -135,11 +169,11 @@ class PredictionService:
                 )
 
         # --------------------------------------------------------------
-        # Final immutable prediction is still created only inside the
-        # existing 15-minute pre-kickoff window.
+        # Process every fixture independently.
         #
-        # All eligible fixtures are processed. We do not select only
-        # the nearest fixture.
+        # We deliberately do not select only the nearest match. If several
+        # Süper Lig fixtures share the same kickoff time, every eligible
+        # fixture is handled during the same run.
         # --------------------------------------------------------------
         for fixture in fixtures:
             current = datetime.now(UTC)
@@ -159,16 +193,223 @@ class PredictionService:
                 ] += 1
                 continue
 
-            if not (
-                0 < minutes <= 15
+            # Past/kicked-off fixtures and matches farther than T-60 need
+            # no pre-match work.
+            if (
+                minutes <= 0
+                or minutes
+                > ANALYSIS_WINDOW_MINUTES
             ):
                 stats[
                     "outside_window"
                 ] += 1
                 continue
 
+            stats[
+                "analysis_active"
+            ] += 1
+
+            state = analysis_state.get(
+                key
+            )
+
+            if not isinstance(
+                state,
+                dict,
+            ):
+                state = {
+                    "fixture_id":
+                        fixture.id,
+                    "fixture":
+                        (
+                            f"{fixture.home} - "
+                            f"{fixture.away}"
+                        ),
+                    "home_team":
+                        fixture.home,
+                    "away_team":
+                        fixture.away,
+                    "kickoff":
+                        fixture.start.isoformat(),
+                    "analysis_started_at":
+                        current.isoformat(),
+                    "lineup_verified":
+                        False,
+                    "lineup_verified_at":
+                        None,
+                    "last_lineup_check_at":
+                        None,
+                    "lineup_fallback":
+                        False,
+                    "lineup_fallback_at":
+                        None,
+                    "updated_at":
+                        current.isoformat(),
+                }
+
+            # ----------------------------------------------------------
+            # T-60 -> T-30 lineup monitoring.
+            #
+            # If a complete XI has already been found, never request the
+            # match detail again for this fixture.
+            # ----------------------------------------------------------
+            if (
+                minutes
+                > LINEUP_CHECK_UNTIL_MINUTES
+                and not bool(
+                    state.get(
+                        "lineup_verified"
+                    )
+                )
+            ):
+                stats[
+                    "lineup_checked"
+                ] += 1
+
+                state[
+                    "last_lineup_check_at"
+                ] = current.isoformat()
+
+                try:
+                    verified = (
+                        self._lineup_verified(
+                            self.collector.match(
+                                fixture.id
+                            )
+                        )
+                    )
+
+                    if verified:
+                        state[
+                            "lineup_verified"
+                        ] = True
+
+                        state[
+                            "lineup_verified_at"
+                        ] = (
+                            datetime.now(
+                                UTC
+                            ).isoformat()
+                        )
+
+                        stats[
+                            "lineup_verified"
+                        ] += 1
+
+                        self.logger.info(
+                            "lineup_verified "
+                            "fixture_id=%s "
+                            "minutes_to_kickoff=%.1f",
+                            fixture.id,
+                            minutes,
+                        )
+
+                    else:
+                        self.logger.info(
+                            "lineup_not_yet_available "
+                            "fixture_id=%s "
+                            "minutes_to_kickoff=%.1f",
+                            fixture.id,
+                            minutes,
+                        )
+
+                except Exception as exc:
+                    self.logger.warning(
+                        "lineup_check_failed "
+                        "fixture_id=%s "
+                        "minutes_to_kickoff=%.1f "
+                        "error=%s",
+                        fixture.id,
+                        minutes,
+                        type(exc).__name__,
+                    )
+
+            # ----------------------------------------------------------
+            # At T-30 the lineup requirement is permanently released.
+            #
+            # This does not claim that a lineup exists. It records that
+            # absence of a verified XI is no longer allowed to prevent the
+            # final T-15 prediction.
+            # ----------------------------------------------------------
+            if (
+                minutes
+                <= LINEUP_CHECK_UNTIL_MINUTES
+                and not bool(
+                    state.get(
+                        "lineup_verified"
+                    )
+                )
+                and not bool(
+                    state.get(
+                        "lineup_fallback"
+                    )
+                )
+            ):
+                state[
+                    "lineup_fallback"
+                ] = True
+
+                state[
+                    "lineup_fallback_at"
+                ] = current.isoformat()
+
+                stats[
+                    "lineup_fallback"
+                ] += 1
+
+                self.logger.info(
+                    "lineup_fallback_enabled "
+                    "fixture_id=%s "
+                    "minutes_to_kickoff=%.1f",
+                    fixture.id,
+                    minutes,
+                )
+
+            state[
+                "updated_at"
+            ] = datetime.now(
+                UTC
+            ).isoformat()
+
+            analysis_state[
+                key
+            ] = state
+
+            # Persist the state immediately so another workflow run can
+            # continue from the same immutable pre-match evidence.
+            self.store.write(
+                "pre_match_analysis",
+                analysis_state,
+            )
+
+            # ----------------------------------------------------------
+            # T-60 -> T-15 is monitoring only.
+            #
+            # No immutable prediction is created and no Telegram delivery
+            # can be reserved before the final window.
+            # ----------------------------------------------------------
+            if (
+                minutes
+                > FINAL_PREDICTION_MINUTES
+            ):
+                stats[
+                    "waiting_final_window"
+                ] += 1
+                continue
+
+            # ----------------------------------------------------------
+            # T-15 final prediction.
+            #
+            # A final detail lookup is allowed here only when the XI has
+            # not already been verified. Missing XI can never block the
+            # prediction after the T-30 fallback point.
+            # ----------------------------------------------------------
             prediction = self._build(
-                fixture
+                fixture,
+                analysis_state.get(
+                    key,
+                    {},
+                ),
             )
 
             if prediction is None:
@@ -214,8 +455,12 @@ class PredictionService:
             )
 
             if publishable:
-                published.append(
+                published_payload = (
                     prediction.payload()
+                )
+
+                published.append(
+                    published_payload
                 )
 
                 self.store.write(
@@ -272,6 +517,38 @@ class PredictionService:
                         reasons
                     ),
                 )
+
+        # --------------------------------------------------------------
+        # Remove stale pre-match state only after fixtures have kicked off.
+        #
+        # Historical forecast/performance data is stored elsewhere, so
+        # pre_match_analysis only needs active future fixtures.
+        # --------------------------------------------------------------
+        active_fixture_ids = {
+            str(fixture.id)
+            for fixture in fixtures
+            if fixture.start
+            > datetime.now(UTC)
+        }
+
+        stale_analysis = [
+            key
+            for key
+            in analysis_state
+            if key
+            not in active_fixture_ids
+        ]
+
+        for key in stale_analysis:
+            analysis_state.pop(
+                key,
+                None,
+            )
+
+        self.store.write(
+            "pre_match_analysis",
+            analysis_state,
+        )
 
         # --------------------------------------------------------------
         # Backward-compatible recovery:
@@ -546,6 +823,7 @@ class PredictionService:
                 prediction = Prediction(
                     **row
                 )
+
             except TypeError:
                 failures += 1
 
@@ -620,6 +898,7 @@ class PredictionService:
     def _build(
         self,
         fixture,
+        analysis_state: dict | None = None,
     ):
         """Build one immutable final pre-match prediction."""
         as_of = datetime.now(UTC)
@@ -634,25 +913,81 @@ class PredictionService:
             as_of,
         )
 
-        verified = False
+        state = (
+            analysis_state
+            if isinstance(
+                analysis_state,
+                dict,
+            )
+            else {}
+        )
 
-        try:
-            verified = (
-                self._lineup_verified(
-                    self.collector.match(
-                        fixture.id
+        verified = bool(
+            state.get(
+                "lineup_verified",
+                False,
+            )
+        )
+
+        # One final lineup lookup is allowed at T-15 if a complete XI was
+        # not found earlier. Failure or absence never blocks prediction.
+        if not verified:
+            try:
+                verified = (
+                    self._lineup_verified(
+                        self.collector.match(
+                            fixture.id
+                        )
                     )
                 )
-            )
 
-        except Exception as exc:
-            self.logger.warning(
-                "lineup_unavailable "
-                "fixture_id=%s "
-                "error=%s",
-                fixture.id,
-                type(exc).__name__,
-            )
+                if verified:
+                    state[
+                        "lineup_verified"
+                    ] = True
+
+                    state[
+                        "lineup_verified_at"
+                    ] = datetime.now(
+                        UTC
+                    ).isoformat()
+
+                    state[
+                        "updated_at"
+                    ] = datetime.now(
+                        UTC
+                    ).isoformat()
+
+                    analysis = self.store.read(
+                        "pre_match_analysis",
+                        {},
+                    )
+
+                    if not isinstance(
+                        analysis,
+                        dict,
+                    ):
+                        analysis = {}
+
+                    analysis[
+                        str(
+                            fixture.id
+                        )
+                    ] = state
+
+                    self.store.write(
+                        "pre_match_analysis",
+                        analysis,
+                    )
+
+            except Exception as exc:
+                self.logger.warning(
+                    "lineup_unavailable "
+                    "fixture_id=%s "
+                    "error=%s",
+                    fixture.id,
+                    type(exc).__name__,
+                )
 
         # Never create a prediction after kickoff.
         if (
@@ -667,8 +1002,7 @@ class PredictionService:
             [],
         )
 
-        # New market-level learning state is supplied separately.
-        # Missing state is safe for first run and old repositories.
+        # Market-level adaptive learning state.
         learning_state = self.store.read(
             "learning_state",
             {},
@@ -691,9 +1025,16 @@ class PredictionService:
             "prediction_built "
             "fixture_id=%s "
             "lineup_verified=%s "
+            "lineup_fallback=%s "
             "markets=%s",
             fixture.id,
             prediction.lineup_verified,
+            bool(
+                state.get(
+                    "lineup_fallback",
+                    False,
+                )
+            ),
             ",".join(
                 prediction.markets.keys()
             )
