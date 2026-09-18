@@ -429,13 +429,7 @@ class PredictionService:
 
             payload = prediction.payload()
 
-            publishable = (
-                prediction.data_quality
-                >= 0.5
-                and prediction.confidence
-                >= self.settings.minimum_probability
-            )
-
+        publishable = True
             payload[
                 "publishable"
             ] = publishable
