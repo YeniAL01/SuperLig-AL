@@ -64,8 +64,6 @@ class PredictionService:
             waiting_final_window=0,
             already_locked=0,
             build_failed=0,
-            low_data=0,
-            low_probability=0,
             eligible=0,
         )
 
@@ -427,91 +425,26 @@ class PredictionService:
 
                 continue
 
-                payload = prediction.payload()
+            # Every successfully built final prediction is publishable.
+            # Confidence and data quality remain in the prediction payload.
+            payload = prediction.payload()
+            payload["publishable"] = True
+            forecasts.append(payload)
 
-        publishable = True
-
-        payload[
-            "publishable"
-        ] = publishable
-
-        forecasts.append(
-            payload
-        )
-
-            # Persist every immutable forecast immediately.
+            # Persist the immutable forecast before publication/reservation.
             self.store.write(
                 "forecasts",
                 forecasts,
             )
+            locked.add(key)
 
-            locked.add(
-                key
+            published.append(prediction.payload())
+            self.store.write(
+                "predictions",
+                published,
             )
-
-            if publishable:
-                published_payload = (
-                    prediction.payload()
-                )
-
-                published.append(
-                    published_payload
-                )
-
-                self.store.write(
-                    "predictions",
-                    published,
-                )
-
-                stats[
-                    "eligible"
-                ] += 1
-
-                count += 1
-
-            else:
-                reasons = []
-
-                if (
-                    prediction.data_quality
-                    < 0.5
-                ):
-                    stats[
-                        "low_data"
-                    ] += 1
-
-                    reasons.append(
-                        "insufficient_history_"
-                        "min_5_per_team"
-                    )
-
-                if (
-                    prediction.confidence
-                    < self.settings.minimum_probability
-                ):
-                    stats[
-                        "low_probability"
-                    ] += 1
-
-                    reasons.append(
-                        "probability_below_threshold"
-                    )
-
-                self.logger.info(
-                    "shadow_only "
-                    "fixture_id=%s "
-                    "probability=%.2f "
-                    "threshold=%.2f "
-                    "quality=%.2f "
-                    "reasons=%s",
-                    fixture.id,
-                    prediction.confidence,
-                    self.settings.minimum_probability,
-                    prediction.data_quality,
-                    ",".join(
-                        reasons
-                    ),
-                )
+            stats["eligible"] += 1
+            count += 1
 
         # --------------------------------------------------------------
         # Remove stale pre-match state only after fixtures have kicked off.
