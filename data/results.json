@@ -448,5 +448,15 @@
     "away_goals": 0,
     "available_at": "2026-09-17T08:51:36.329517+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904750",
+    "home_team": "Kasımpaşa",
+    "away_team": "Konyaspor",
+    "kickoff": "2026-09-18T17:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 0,
+    "available_at": "2026-09-18T18:53:27.907149+00:00",
+    "source": "fotmob"
   }
 ]
