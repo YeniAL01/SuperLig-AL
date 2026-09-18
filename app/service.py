@@ -427,16 +427,17 @@ class PredictionService:
 
                 continue
 
-            payload = prediction.payload()
+                payload = prediction.payload()
 
         publishable = True
-            payload[
-                "publishable"
-            ] = publishable
 
-            forecasts.append(
-                payload
-            )
+        payload[
+            "publishable"
+        ] = publishable
+
+        forecasts.append(
+            payload
+        )
 
             # Persist every immutable forecast immediately.
             self.store.write(
