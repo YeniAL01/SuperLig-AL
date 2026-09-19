@@ -1,10 +1,12 @@
 {
   "5904754": {
-    "status": "attempting",
-    "reserved_at": "2026-09-19T13:45:13.112952+00:00"
+    "status": "delivered",
+    "reserved_at": "2026-09-19T13:45:13.112952+00:00",
+    "delivered_at": "2026-09-19T13:45:14.984495+00:00"
   },
   "5904756": {
-    "status": "attempting",
-    "reserved_at": "2026-09-19T13:45:13.112952+00:00"
+    "status": "delivered",
+    "reserved_at": "2026-09-19T13:45:13.112952+00:00",
+    "delivered_at": "2026-09-19T13:45:15.408158+00:00"
   }
 }
