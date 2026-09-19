@@ -458,5 +458,25 @@
     "away_goals": 0,
     "available_at": "2026-09-18T18:53:27.907149+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904754",
+    "home_team": "Çorum FK",
+    "away_team": "Alanyaspor",
+    "kickoff": "2026-09-19T14:00:00.000Z",
+    "home_goals": 1,
+    "away_goals": 2,
+    "available_at": "2026-09-19T15:54:04.207465+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904756",
+    "home_team": "Kocaelispor",
+    "away_team": "Gaziantep FK",
+    "kickoff": "2026-09-19T14:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-09-19T15:54:04.207465+00:00",
+    "source": "fotmob"
   }
 ]
