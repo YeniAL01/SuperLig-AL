@@ -478,5 +478,15 @@
     "away_goals": 0,
     "available_at": "2026-09-19T15:54:04.207465+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904751",
+    "home_team": "Başakşehir",
+    "away_team": "Gençlerbirliği",
+    "kickoff": "2026-09-19T17:00:00.000Z",
+    "home_goals": 4,
+    "away_goals": 0,
+    "available_at": "2026-09-19T18:51:07.572282+00:00",
+    "source": "fotmob"
   }
 ]
