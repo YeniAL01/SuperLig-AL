@@ -480,6 +480,16 @@
     "source": "fotmob"
   },
   {
+    "fixture_id": "5904749",
+    "home_team": "Trabzonspor",
+    "away_team": "Galatasaray",
+    "kickoff": "2026-09-19T17:00:00.000Z",
+    "home_goals": 4,
+    "away_goals": 0,
+    "available_at": "2026-09-19T19:07:58.406148+00:00",
+    "source": "fotmob"
+  },
+  {
     "fixture_id": "5904751",
     "home_team": "Başakşehir",
     "away_team": "Gençlerbirliği",
