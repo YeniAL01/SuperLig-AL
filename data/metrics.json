@@ -1,52 +1,52 @@
 {
   "all": {
-    "matches": 1,
-    "count": 1,
-    "accuracy": 0.0,
-    "winner_accuracy": 0.0,
+    "matches": 5,
+    "count": 5,
+    "accuracy": 0.6,
+    "winner_accuracy": 0.6,
     "exact_score_accuracy": 0.0,
-    "log_loss": 1.3460028301303941,
-    "brier_score": 0.8425032980289632
+    "log_loss": 1.0255948030911075,
+    "brier_score": 0.6189605350099999
   },
   "eligible": {
-    "matches": 0,
-    "count": 0,
-    "accuracy": null,
-    "winner_accuracy": null,
-    "exact_score_accuracy": null,
-    "log_loss": null,
-    "brier_score": null
+    "matches": 4,
+    "count": 4,
+    "accuracy": 0.75,
+    "winner_accuracy": 0.75,
+    "exact_score_accuracy": 0.0,
+    "log_loss": 0.9454927963312858,
+    "brier_score": 0.563074844255259
   },
   "delivered": {
-    "matches": 0,
-    "count": 0,
-    "accuracy": null,
-    "winner_accuracy": null,
-    "exact_score_accuracy": null,
-    "log_loss": null,
-    "brier_score": null
+    "matches": 4,
+    "count": 4,
+    "accuracy": 0.75,
+    "winner_accuracy": 0.75,
+    "exact_score_accuracy": 0.0,
+    "log_loss": 0.9454927963312858,
+    "brier_score": 0.563074844255259
   },
   "published": {
-    "matches": 0,
-    "count": 0,
-    "accuracy": null,
-    "winner_accuracy": null,
-    "exact_score_accuracy": null,
-    "log_loss": null,
-    "brier_score": null
+    "matches": 4,
+    "count": 4,
+    "accuracy": 0.75,
+    "winner_accuracy": 0.75,
+    "exact_score_accuracy": 0.0,
+    "log_loss": 0.9454927963312858,
+    "brier_score": 0.563074844255259
   },
-  "eligible_coverage": 0.0,
-  "delivery_coverage": 0.0,
-  "coverage": 0.0,
+  "eligible_coverage": 0.8,
+  "delivery_coverage": 0.8,
+  "coverage": 0.8,
   "reliability": [
     {
       "range": [
         40,
         50
       ],
-      "matches": 1,
-      "predicted": 0.47409999999999997,
-      "observed": 0.0
+      "matches": 5,
+      "predicted": 0.43422000000000005,
+      "observed": 0.6
     }
   ]
 }

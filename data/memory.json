@@ -6,5 +6,37 @@
   "Konyaspor": {
     "matches": 1,
     "winner_hits": 0
+  },
+  "Çorum FK": {
+    "matches": 1,
+    "winner_hits": 0
+  },
+  "Alanyaspor": {
+    "matches": 1,
+    "winner_hits": 0
+  },
+  "Kocaelispor": {
+    "matches": 1,
+    "winner_hits": 1
+  },
+  "Gaziantep FK": {
+    "matches": 1,
+    "winner_hits": 1
+  },
+  "Başakşehir": {
+    "matches": 1,
+    "winner_hits": 1
+  },
+  "Gençlerbirliği": {
+    "matches": 1,
+    "winner_hits": 1
+  },
+  "Trabzonspor": {
+    "matches": 1,
+    "winner_hits": 1
+  },
+  "Galatasaray": {
+    "matches": 1,
+    "winner_hits": 1
   }
 }
