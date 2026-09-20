@@ -693,6 +693,8 @@ class PredictionService:
 
             return 0
 
+        pending_predictions = []
+
         for key, state in list(
             delivery.items()
         ):
@@ -765,45 +767,42 @@ class PredictionService:
 
                 continue
 
-            if client.send_prediction(
-                prediction
-            ):
-                delivery[key] = {
-                    **state,
-                    "status":
-                        "delivered",
-                    "delivered_at":
-                        datetime.now(
-                            UTC
-                        ).isoformat(),
-                }
+            pending_predictions.append(prediction)
 
-                sent += 1
+        for batch in client.prediction_batches(pending_predictions):
+            # A previous batch's network call may have crossed kickoff.
+            ready = []
+            for prediction in batch:
+                key = str(prediction.fixture_id)
+                if timestamp(prediction.kickoff) <= datetime.now(UTC):
+                    delivery[key] = {
+                        **delivery[key],
+                        "status": "expired",
+                        "updated_at": datetime.now(UTC).isoformat(),
+                    }
+                    failures += 1
+                else:
+                    ready.append(prediction)
 
-                self.logger.info(
-                    "prediction_delivered "
-                    "fixture_id=%s",
-                    key,
-                )
+            if ready:
+                success = client.send_predictions(ready)
+                updated_at = datetime.now(UTC).isoformat()
+                for prediction in ready:
+                    key = str(prediction.fixture_id)
+                    delivery[key] = {
+                        **delivery[key],
+                        "status": "delivered" if success else "failed",
+                        "delivered_at" if success else "failed_at": updated_at,
+                    }
+                    if success:
+                        sent += 1
+                        self.logger.info("prediction_delivered fixture_id=%s", key)
+                    else:
+                        failures += 1
+                        self.logger.error("prediction_delivery_failed fixture_id=%s", key)
 
-            else:
-                delivery[key] = {
-                    **state,
-                    "status":
-                        "failed",
-                    "failed_at":
-                        datetime.now(
-                            UTC
-                        ).isoformat(),
-                }
-
-                failures += 1
-
-                self.logger.error(
-                    "prediction_delivery_failed "
-                    "fixture_id=%s",
-                    key,
-                )
+            # Persist each batch before attempting the next one.
+            self.store.write("delivery", delivery)
 
         self.store.write(
             "delivery",

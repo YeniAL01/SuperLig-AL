@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import logging
+from tempfile import TemporaryDirectory
 
 import requests
 
@@ -44,6 +45,48 @@ class TelegramClient:
         prediction: Prediction,
     ) -> bool:
         """Send one locked final prediction."""
+        return self.send_predictions([prediction])
+
+    def prediction_batches(self, predictions: list[Prediction]):
+        """Keep image dimensions bounded; a league round fits in one image."""
+        for start in range(0, len(predictions), 20):
+            yield predictions[start:start + 20]
+
+    def prediction_rows(self, predictions: list[Prediction]):
+        rows = []
+        for prediction in predictions:
+            markets = prediction.markets if isinstance(prediction.markets, dict) else {}
+            one_x_two = self._market(markets, "1x2")
+            decision = self._format_1x2(prediction, one_x_two).rsplit(" I 📊 Güven:", 1)[0]
+            confidence = self._confidence(one_x_two, prediction.confidence)
+            rows.append((
+                prediction.fixture, decision, f"%{confidence:.1f}",
+                self._format_ou25(self._market(markets, "ou25")),
+                self._format_btts(self._market(markets, "btts")),
+                f"{prediction.home_goals}-{prediction.away_goals}",
+                prediction.lineup_verified,
+            ))
+        return rows
+
+    def send_predictions(self, predictions: list[Prediction]) -> bool:
+        """Render and send all ready matches in a single table image."""
+        if not predictions:
+            return True
+        if not self.enabled:
+            return False
+        from reporting.prediction_table import create_prediction_table
+        try:
+            with TemporaryDirectory(prefix="superlig-predictions-") as directory:
+                image = create_prediction_table(
+                    self.prediction_rows(predictions), Path(directory) / "predictions.png"
+                )
+                return self.send_photo(image, "Süper Lig maç tahminleri")
+        except (OSError, ValueError):
+            logger.exception("prediction_table_failed")
+            return False
+
+    def format_prediction(self, prediction: Prediction) -> str:
+        """Render one match without sending it."""
         markets = (
             prediction.markets
             if isinstance(
@@ -88,30 +131,15 @@ class TelegramClient:
         )
 
         lineup_text = (
-            "(11 - tespit edildi)"
-            if prediction.lineup_verified
-            else "(11 - tespit edilmedi)"
+            "Doğrulandı" if prediction.lineup_verified else "Doğrulanmadı"
         )
-
-        decisions = ", ".join(
-            (
-                one_x_two_text,
-                ou25_text,
-                btts_text,
-            )
-        )
-
-        text = (
+        return (
             f"⚽ {prediction.fixture}\n\n"
-            f"Ortak Kararlar: {decisions}\n\n"
-            f"Tahmini skor: "
-            f"{prediction.home_goals}-"
-            f"{prediction.away_goals}\n"
-            f"Kadro: {lineup_text}"
-        )
-
-        return self.send_text(
-            text
+            f"🏆 Maç sonucu: {one_x_two_text}\n\n"
+            f"🥅 Gol tahmini: {ou25_text} I "
+            f"⚔️ Karşılıklı gol: {btts_text}\n\n"
+            f"🎯 Tahmini skor: {prediction.home_goals}-{prediction.away_goals} I "
+            f"👥 İlk 11: {lineup_text}"
         )
 
     @staticmethod
@@ -202,8 +230,7 @@ class TelegramClient:
             )
 
         return (
-            f"{decision} "
-            f"(%{confidence:.1f})"
+            f"{decision} I 📊 Güven: %{confidence:.1f}"
         )
 
     def _format_ou25(
@@ -255,13 +282,13 @@ class TelegramClient:
         )
 
         if selection == "YES":
-            decision = "KG Var"
+            decision = "Var"
 
         elif selection == "NO":
-            decision = "KG Yok"
+            decision = "Yok"
 
         else:
-            decision = "KG Var/Yok"
+            decision = "Var/Yok"
 
         return (
             f"{decision} "
@@ -326,14 +353,11 @@ class TelegramClient:
             )
             return False
 
-        if not response.ok:
-            logger.warning(
-                "telegram_send_photo_failed "
-                "status=%s",
-                response.status_code,
-            )
-
-        return response.ok
+        try:
+            body = response.json()
+        except ValueError:
+            return False
+        return response.ok and isinstance(body, dict) and body.get("ok") is True
 
     def _post(
         self,
