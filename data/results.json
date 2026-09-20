@@ -518,5 +518,15 @@
     "away_goals": 0,
     "available_at": "2026-09-20T15:54:25.104272+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904753",
+    "home_team": "Göztepe",
+    "away_team": "Rizespor",
+    "kickoff": "2026-09-20T17:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 2,
+    "available_at": "2026-09-20T18:59:45.156616+00:00",
+    "source": "fotmob"
   }
 ]
