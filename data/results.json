@@ -498,5 +498,25 @@
     "away_goals": 0,
     "available_at": "2026-09-19T18:51:07.572282+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904755",
+    "home_team": "Fenerbahçe",
+    "away_team": "Eyüpspor",
+    "kickoff": "2026-09-20T14:00:00.000Z",
+    "home_goals": 8,
+    "away_goals": 0,
+    "available_at": "2026-09-20T15:54:25.104272+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904757",
+    "home_team": "Erzurumspor FK",
+    "away_team": "Samsunspor",
+    "kickoff": "2026-09-20T14:00:00.000Z",
+    "home_goals": 1,
+    "away_goals": 0,
+    "available_at": "2026-09-20T15:54:25.104272+00:00",
+    "source": "fotmob"
   }
 ]
