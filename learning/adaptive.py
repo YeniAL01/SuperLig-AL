@@ -20,7 +20,7 @@ Important:
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from math import exp, isfinite, log
 from typing import Any
 
@@ -30,6 +30,7 @@ MARKETS = ("1x2", "ou25", "btts")
 
 MIN_REVIEW_SAMPLES = 20
 MIN_ADAPT_SAMPLES = 30
+MIN_OBSERVATION_PERIOD = timedelta(days=28)
 
 REVIEW_ERROR_RATE = 0.35
 ADAPT_ERROR_RATE = 0.40
@@ -153,6 +154,14 @@ def model_weights(
         return {}
 
     rows = eligible(records, cutoff)
+
+    # V1 baseline is observed for four full weeks before historical
+    # performance is allowed to alter expert weights.
+    if not rows or (rows[-1]["settled_at"] and (
+        timestamp(rows[-1]["settled_at"]) - timestamp(rows[0]["settled_at"])
+    ) < MIN_OBSERVATION_PERIOD):
+        return {name: 1.0 / len(names) for name in names}
+
     scores = {}
 
     for name in names:
@@ -1278,10 +1287,14 @@ def update_learning_state(
             "calibration"
         ] = calibration
 
-        if total < MIN_REVIEW_SAMPLES:
-            market_state[
-                "status"
-            ] = "collecting"
+        observation_complete = (
+            len(rows) >= 2
+            and timestamp(rows[-1]["settled_at"]) - timestamp(rows[0]["settled_at"])
+            >= MIN_OBSERVATION_PERIOD
+        )
+
+        if not observation_complete or total < MIN_REVIEW_SAMPLES:
+            market_state["status"] = "collecting_4_weeks"
             continue
 
         error_20 = (

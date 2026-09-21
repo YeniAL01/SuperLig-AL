@@ -48,39 +48,51 @@ class TelegramClient:
         return self.send_predictions([prediction])
 
     def prediction_batches(self, predictions: list[Prediction]):
-        """Keep image dimensions bounded; a league round fits in one image."""
-        for start in range(0, len(predictions), 20):
-            yield predictions[start:start + 20]
+        """At most four match cards per image."""
+        ordered = sorted(
+            predictions,
+            key=lambda p: (
+                p.kickoff,
+                -self._confidence(self._market(p.markets if isinstance(p.markets, dict) else {}, "1x2"), p.confidence),
+            ),
+        )
+        for start in range(0, len(ordered), 4):
+            yield ordered[start:start + 4]
 
     def prediction_rows(self, predictions: list[Prediction]):
         rows = []
         for prediction in predictions:
             markets = prediction.markets if isinstance(prediction.markets, dict) else {}
             one_x_two = self._market(markets, "1x2")
-            decision = self._format_1x2(prediction, one_x_two).rsplit(" I 📊 Güven:", 1)[0]
-            confidence = self._confidence(one_x_two, prediction.confidence)
-            rows.append((
-                prediction.fixture, decision, f"%{confidence:.1f}",
-                self._format_ou25(self._market(markets, "ou25")),
-                self._format_btts(self._market(markets, "btts")),
-                f"{prediction.home_goals}-{prediction.away_goals}",
-                prediction.lineup_verified,
-            ))
+            selection = str(one_x_two.get("selection", prediction.outcome)).upper()
+            if selection == "HOME": winner = prediction.home_team or prediction.winner
+            elif selection == "AWAY": winner = prediction.away_team or prediction.winner
+            elif selection == "DRAW": winner = "Beraberlik"
+            else: winner = prediction.winner or "—"
+            ou = str(self._market(markets, "ou25").get("selection", "")).upper()
+            rows.append({
+                "fixture": prediction.fixture,
+                "kickoff": prediction.kickoff,
+                "confidence": self._confidence(one_x_two, prediction.confidence),
+                "winner": winner,
+                "ou25": "ÜST" if ou == "OVER" else "ALT" if ou == "UNDER" else "—",
+            })
         return rows
 
     def send_predictions(self, predictions: list[Prediction]) -> bool:
-        """Render and send all ready matches in a single table image."""
-        if not predictions:
-            return True
-        if not self.enabled:
-            return False
+        """Render and send ready matches as premium card images."""
+        if not predictions: return True
+        if not self.enabled: return False
         from reporting.prediction_table import create_prediction_table
         try:
             with TemporaryDirectory(prefix="superlig-predictions-") as directory:
-                image = create_prediction_table(
-                    self.prediction_rows(predictions), Path(directory) / "predictions.png"
-                )
-                return self.send_photo(image, "Süper Lig maç tahminleri")
+                for number, batch in enumerate(self.prediction_batches(predictions), 1):
+                    image = create_prediction_table(
+                        self.prediction_rows(batch), Path(directory) / f"predictions-{number}.png"
+                    )
+                    if not self.send_photo(image, "Süper Lig maç tahminleri"):
+                        return False
+                return True
         except (OSError, ValueError):
             logger.exception("prediction_table_failed")
             return False

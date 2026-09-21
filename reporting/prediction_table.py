@@ -1,85 +1,76 @@
-"""Render final predictions as one portable Telegram table image."""
+"""Premium Telegram match-card renderer for Süper Lig predictions."""
+from datetime import datetime
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-BLUE = '#49a5ff'
-RED = '#ff6577'
+BG = "#061525"; PANEL = "#0b2238"; BORDER = "#1e9ce8"; WHITE = "#f5f8fc"
+MUTED = "#a9bdd0"; GREEN = "#45e57b"; GOLD = "#ffc83d"; RED = "#ff4d5f"; BLUE = "#2db5ff"
 
 
-def _font(size, bold=False):
-    names = [
-        'C:/Windows/Fonts/segoeuib.ttf' if bold else 'C:/Windows/Fonts/segoeui.ttf',
+def _font(size, bold=False, italic=False):
+    candidates = []
+    if italic:
+        candidates += ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf']
+    candidates += [
         '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
         'DejaVuSans-Bold.ttf' if bold else 'DejaVuSans.ttf',
     ]
-    for name in names:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            pass
-    return ImageFont.load_default(size=size)
+    for name in candidates:
+        try: return ImageFont.truetype(name, size)
+        except OSError: pass
+    return ImageFont.load_default()
 
 
-def _wrap(draw, text, font, width):
-    lines, line = [], ''
-    for word in str(text).split():
-        candidate = f'{line} {word}'.strip()
-        if line and draw.textlength(candidate, font=font) > width:
-            lines.append(line)
-            line = ''
-        for char in word:
-            candidate = line + char
-            if draw.textlength(candidate, font=font) > width:
-                lines.append(line)
-                line = ''
-            line += char
-        line += ' '
-    if line.strip():
-        lines.append(line.strip())
-    return lines or ['—']
+def _center(draw, box, text, font, fill):
+    l,t,r,b = draw.textbbox((0,0), str(text), font=font)
+    x=(box[0]+box[2]-(r-l))/2; y=(box[1]+box[3]-(b-t))/2-(t/2)
+    draw.text((x,y), str(text), font=font, fill=fill)
+
+
+def _time(kickoff):
+    try:
+        dt=datetime.fromisoformat(str(kickoff).replace('Z','+00:00'))
+        return dt.astimezone().strftime('%H:%M')
+    except Exception: return str(kickoff or '—')
+
+
+def _card(draw, box, row, index):
+    x1,y1,x2,y2=box
+    draw.rounded_rectangle(box, 24, fill=PANEL, outline=BORDER, width=2)
+    draw.rounded_rectangle((x1+18,y1+18,x1+64,y1+62), 8, fill='#0e4d78')
+    _center(draw,(x1+18,y1+18,x1+64,y1+62),str(index),_font(22,True),WHITE)
+    fixture=row['fixture']; home, away=(fixture.split(' - ',1)+[''])[:2]
+    _center(draw,(x1+70,y1+28,x2-70,y1+78),f"{home.upper()}  VS  {away.upper()}",_font(24,True),WHITE)
+    draw.line((x1+28,y1+92,x2-28,y1+92),fill='#21445f',width=1)
+    draw.text((x1+38,y1+112),f"🕐  {_time(row.get('kickoff'))}",font=_font(20),fill=WHITE)
+    conf=float(row.get('confidence',0)); low=conf<58
+    color=RED if low else GREEN
+    draw.rounded_rectangle((x1+28,y1+158,x2-28,y1+224),16,fill='#092d28' if not low else '#32151b',outline=color,width=2)
+    draw.text((x1+50,y1+174),'Başarı Oranı',font=_font(20,True),fill=WHITE)
+    draw.text((x2-180,y1+164),f"%{conf:.1f}",font=_font(34,True),fill=color)
+    if low: draw.text((x2-300,y1+208),'🚨 DÜŞÜK GÜVEN',font=_font(14,True),fill=RED)
+    draw.text((x1+42,y1+258),'🏆  Kazanan Takım:',font=_font(20),fill=WHITE)
+    draw.text((x1+285,y1+258),row.get('winner','—'),font=_font(21,True),fill=GOLD)
+    draw.text((x1+42,y1+306),'⚽  2.5 Alt/Üst:',font=_font(20),fill=WHITE)
+    draw.text((x1+285,y1+306),row.get('ou25','—'),font=_font(21,True),fill=GREEN if row.get('ou25')=='ÜST' else RED)
 
 
 def create_prediction_table(rows, output: Path):
-    """Rows contain display strings and a verified-lineup boolean."""
-    if not rows:
-        raise ValueError('At least one prediction is required')
-    x = [76, 432, 776, 928, 1198, 1428, 1554, 1824]
-    font = _font(25)
-    scratch = ImageDraw.Draw(Image.new('RGB', (1, 1)))
-    wrapped = [[_wrap(scratch, value, font, x[i+1]-x[i]-36)
-                for i, value in enumerate(row[:6])] for row in rows]
-    heights = [max(128, 48 + 35 * max(map(len, cells))) for cells in wrapped]
-    height = 384 + sum(heights)
-    image = Image.new('RGB', (1900, height), '#0b1423')
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((42, 36, 1858, height-36), radius=26, fill='#132239', outline='#2b405a', width=2)
-    draw.rounded_rectangle((76, 73, 84, 152), radius=4, fill='#38d6b0')
-    draw.text((104, 65), 'SÜPER LİG', font=_font(43, True), fill='#f3f7fd')
-    draw.text((106, 121), 'MAÇ TAHMİNLERİ', font=_font(22), fill='#abc0d7')
-    draw.text((1638, 90), f'{len(rows)} MAÇ', font=_font(25, True), fill='#82ead0')
-    draw.rounded_rectangle((76, 193, 1824, 251), radius=10, fill='#213650')
-    for i, name in enumerate(['Maç', 'Maç sonucu', 'Güven', 'Gol tahmini', 'KG', 'Skor', 'İlk 11']):
-        draw.text((x[i]+18, 207), name, font=_font(22, True), fill='#c0d0e1')
-    y = 251
-    for n, (row, cells, row_height) in enumerate(zip(rows, wrapped, heights)):
-        if n % 2:
-            draw.rectangle((76, y, 1824, y+row_height), fill='#172940')
-        for i, lines in enumerate(cells):
-            yy = y + (row_height-len(lines)*35)//2
-            for line in lines:
-                draw.text((x[i]+18, yy), line, font=font, fill='#edf3fb')
-                yy += 35
-        cx, cy = 1688, y+row_height//2
-        if row[6]:
-            draw.line([(cx-21, cy), (cx-5, cy+16), (cx+25, cy-20)], fill=BLUE, width=8)
-        else:
-            draw.line([(cx-18, cy-18), (cx+18, cy+18)], fill=RED, width=8)
-            draw.line([(cx+18, cy-18), (cx-18, cy+18)], fill=RED, width=8)
-        draw.line((76, y+row_height, 1824, y+row_height), fill='#2b405a', width=1)
-        y += row_height
-    draw.text((94, y+32), 'Mavi tik: İlk 11 doğrulandı   |   Kırmızı çarpı: İlk 11 doğrulanmadı', font=_font(20), fill='#adc2d8')
-    draw.text((1504, y+32), 'SuperLig-AL', font=_font(22, True), fill='#adc2d8')
-    output = Path(output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    image.save(output, format='PNG')
-    return output
+    if not rows: raise ValueError('At least one prediction is required')
+    width=1400; header=190; footer=110; gap=22; margin=42
+    cols=1 if len(rows)==1 else 2
+    card_w=(width-2*margin-gap*(cols-1))//cols; card_h=370
+    grid_rows=(len(rows)+cols-1)//cols
+    height=header+grid_rows*card_h+(grid_rows-1)*gap+footer
+    image=Image.new('RGB',(width,height),BG); d=ImageDraw.Draw(image)
+    d.text((55,35),'SÜPER LİG',font=_font(38,True),fill=WHITE)
+    d.text((55,82),'MAÇ TAHMİNLERİ',font=_font(46,True),fill=BLUE)
+    d.text((57,142),'VERİ  •  ANALİZ  •  YAPAY ZEKA',font=_font(17),fill=BLUE)
+    for i,row in enumerate(rows):
+        rr=i//cols; cc=i%cols; x=margin+cc*(card_w+gap); y=header+rr*(card_h+gap)
+        _card(d,(x,y,x+card_w,y+card_h),row,i+1)
+    fy=height-footer+28
+    d.text((55,fy),'VERİ GÜCÜ   •   YAPAY ZEKA DESTEĞİ   •   DAHA İSABETLİ TAHMİNLER',font=_font(16,True),fill=MUTED)
+    d.text((width-230,fy-8),'Sercan',font=_font(38,italic=True),fill=WHITE)
+    d.line((width-235,fy+42,width-70,fy+42),fill=GOLD,width=3)
+    output=Path(output); output.parent.mkdir(parents=True,exist_ok=True); image.save(output,'PNG'); return output

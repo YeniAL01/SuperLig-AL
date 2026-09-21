@@ -57,6 +57,33 @@ class FotMobCollector:
                          "available_at": observed, "source": "fotmob"})
         return rows
 
+    def latest_completed_round(self, league_id):
+        """Return the latest fully completed league round, or None.
+
+        A round is complete when every non-cancelled fixture in that round is
+        marked finished by FotMob. The returned dict contains round, fixture_ids
+        and last_kickoff.
+        """
+        grouped = {}
+        for m in self._matches(league_id):
+            round_no = m.get("round")
+            status = m.get("status", {})
+            if round_no is None or not status.get("utcTime"):
+                continue
+            if status.get("cancelled"):
+                continue
+            grouped.setdefault(round_no, []).append(m)
+        completed = []
+        for round_no, matches in grouped.items():
+            if matches and all(m.get("status", {}).get("finished") for m in matches):
+                starts = [datetime.fromisoformat(m["status"]["utcTime"].replace("Z", "+00:00")) for m in matches]
+                completed.append({
+                    "round": round_no,
+                    "fixture_ids": [str(m["id"]) for m in matches],
+                    "last_kickoff": max(starts),
+                })
+        return max(completed, key=lambda x: x["last_kickoff"]) if completed else None
+
     def match(self, fixture_id):
         return self.client.get_json(f"{self.BASE_URL}/matchDetails", {"matchId": fixture_id})
 

@@ -418,7 +418,7 @@ def test_learning_collects_below_20_samples():
 
         assert market_state[
             "status"
-        ] == "collecting"
+        ] == "collecting_4_weeks"
 
     assert isinstance(
         events,

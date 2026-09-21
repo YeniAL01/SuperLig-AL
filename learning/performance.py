@@ -89,27 +89,30 @@ def score_prediction(
             elif predicted_team == "Beraberlik":
                 predicted_outcome = "DRAW"
 
+    markets = prediction.get("markets", {}) if isinstance(prediction.get("markets"), dict) else {}
+    ou_selection = str(markets.get("ou25", {}).get("selection", "")).upper()
+    btts_selection = str(markets.get("btts", {}).get("selection", "")).upper()
+    actual_ou = "OVER" if int(home_goals) + int(away_goals) > 2.5 else "UNDER"
+    actual_btts = "YES" if int(home_goals) > 0 and int(away_goals) > 0 else "NO"
+
+    winner_correct = predicted_outcome == label
+    ou25_correct = ou_selection == actual_ou
+    btts_correct = btts_selection == actual_btts
+    score_correct = (
+        int(prediction.get("home_goals", -1)) == int(home_goals)
+        and int(prediction.get("away_goals", -1)) == int(away_goals)
+    )
+
     result = {
         "actual_outcome": label,
-        "winner_correct": (
-            predicted_outcome == label
-        ),
-        "score_correct": (
-            int(
-                prediction.get(
-                    "home_goals",
-                    -1,
-                )
-            )
-            == int(home_goals)
-            and int(
-                prediction.get(
-                    "away_goals",
-                    -1,
-                )
-            )
-            == int(away_goals)
-        ),
+        "actual_ou25": actual_ou,
+        "actual_btts": actual_btts,
+        "winner_correct": winner_correct,
+        "ou25_correct": ou25_correct,
+        "btts_correct": btts_correct,
+        "score_correct": score_correct,
+        "points": 10 * sum((winner_correct, ou25_correct, btts_correct, score_correct)),
+        "max_points": 40,
     }
 
     probabilities = prediction.get(
