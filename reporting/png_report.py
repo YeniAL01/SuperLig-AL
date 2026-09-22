@@ -28,16 +28,17 @@ def _base(title,subtitle,height):
     return im,d
 
 def _signature(d,height):
-    # Onaylanan imza: el yazısı Sercan + altın çizgi + küçük taç.
-    sx, sy = 1240, height-92
-    d.text((sx-88,sy+30),'Designed by',font=_font(12),fill=MUTED)
-    d.text((sx,sy+8),'Sercan',font=_font(40,italic=True),fill=WHITE)
-    d.line((sx-4,height-28,1440,height-28),fill=GOLD,width=3)
-    # Küçük altın taç (font/emoji bağımsız çizim).
-    cx, cy = 1410, sy+2
-    crown=[(cx-20,cy+17),(cx-17,cy-5),(cx-7,cy+7),(cx,cy-10),(cx+8,cy+7),(cx+18,cy-4),(cx+15,cy+17)]
+    # Kompakt, kaşe tipi Sercan mührü: altın çember + taç + imza.
+    cx, cy, r = 1382, height-72, 54
+    d.ellipse((cx-r,cy-r,cx+r,cy+r),outline=GOLD,width=3)
+    d.ellipse((cx-r+7,cy-r+7,cx+r-7,cy+r-7),outline=(185,139,43),width=1)
+    d.text((cx,cy-r+13),'DESIGNED BY',font=_font(8,True),fill=GOLD,anchor='mm')
+    crown=[(cx-16,cy-16),(cx-13,cy-30),(cx-5,cy-21),(cx,cy-34),(cx+6,cy-21),(cx+14,cy-30),(cx+12,cy-16)]
     d.polygon(crown,fill=GOLD)
-    d.rectangle((cx-20,cy+17,cx+15,cy+22),fill=GOLD)
+    d.rectangle((cx-16,cy-16,cx+12,cy-12),fill=GOLD)
+    d.text((cx,cy+5),'Sercan',font=_font(21,italic=True),fill=WHITE,anchor='mm')
+    d.line((cx-31,cy+21,cx+31,cy+21),fill=GOLD,width=2)
+    d.text((cx,cy+35),'VERİ • ANALİZ',font=_font(6,True),fill=GOLD,anchor='mm')
 
 def create_weekly_report(records, output:Path):
     records=sorted(records,key=lambda r:(-int(r.get('points',0) or 0), str(r.get('kickoff','')), str(r.get('fixture_id',''))))

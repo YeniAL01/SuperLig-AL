@@ -453,6 +453,7 @@ def main():
             "learn",
             "test",
             "test-telegram",
+            "test-prediction",
             "backtest",
             "import-history",
             "metrics",
@@ -475,6 +476,15 @@ def main():
     args = parser.parse_args()
 
     settings = Settings()
+
+    # --------------------------------------------------------------
+    # Read-only visual Telegram prediction test.
+    # --------------------------------------------------------------
+    if args.command == "test-prediction":
+        from app.test_run import send_prediction_test
+        logger = configure_logging(settings)
+        collector = FotMobCollector()
+        return send_prediction_test(settings, collector, logger)
 
     # --------------------------------------------------------------
     # Telegram connectivity test

@@ -1,5 +1,6 @@
 """Premium Telegram match-card renderer for Süper Lig predictions."""
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
@@ -30,7 +31,7 @@ def _center(draw, box, text, font, fill):
 def _time(kickoff):
     try:
         dt=datetime.fromisoformat(str(kickoff).replace('Z','+00:00'))
-        return dt.astimezone().strftime('%H:%M')
+        return dt.astimezone(ZoneInfo('Europe/Istanbul')).strftime('%H:%M')
     except Exception: return str(kickoff or '—')
 
 
@@ -55,6 +56,18 @@ def _card(draw, box, row, index):
     draw.text((x1+285,y1+306),row.get('ou25','—'),font=_font(21,True),fill=GREEN if row.get('ou25')=='ÜST' else RED)
 
 
+def _signature_badge(draw, cx, cy):
+    r=47
+    draw.ellipse((cx-r,cy-r,cx+r,cy+r),outline=GOLD,width=3)
+    draw.ellipse((cx-r+6,cy-r+6,cx+r-6,cy+r-6),outline='#b58b31',width=1)
+    draw.text((cx,cy-r+12),'DESIGNED BY',font=_font(7,True),fill=GOLD,anchor='mm')
+    crown=[(cx-14,cy-14),(cx-11,cy-27),(cx-4,cy-19),(cx,cy-31),(cx+5,cy-19),(cx+13,cy-27),(cx+11,cy-14)]
+    draw.polygon(crown,fill=GOLD)
+    draw.rectangle((cx-14,cy-14,cx+11,cy-10),fill=GOLD)
+    draw.text((cx,cy+5),'Sercan',font=_font(19,italic=True),fill=WHITE,anchor='mm')
+    draw.line((cx-28,cy+20,cx+28,cy+20),fill=GOLD,width=2)
+    draw.text((cx,cy+33),'VERİ • ANALİZ',font=_font(6,True),fill=GOLD,anchor='mm')
+
 def create_prediction_table(rows, output: Path):
     if not rows: raise ValueError('At least one prediction is required')
     width=1400; header=190; footer=110; gap=22; margin=42
@@ -71,6 +84,5 @@ def create_prediction_table(rows, output: Path):
         _card(d,(x,y,x+card_w,y+card_h),row,i+1)
     fy=height-footer+28
     d.text((55,fy),'VERİ GÜCÜ   •   YAPAY ZEKA DESTEĞİ   •   DAHA İSABETLİ TAHMİNLER',font=_font(16,True),fill=MUTED)
-    d.text((width-230,fy-8),'Sercan',font=_font(38,italic=True),fill=WHITE)
-    d.line((width-235,fy+42,width-70,fy+42),fill=GOLD,width=3)
+    _signature_badge(d,width-92,height-58)
     output=Path(output); output.parent.mkdir(parents=True,exist_ok=True); image.save(output,'PNG'); return output
