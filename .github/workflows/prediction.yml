@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "İlk 4 gelecek maçı Telegram görseli olarak test et (hafızaya yazmaz)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -34,9 +40,18 @@ jobs:
         run: pytest -q
 
       - name: Build and reserve predictions
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.test_mode) }}
         run: python main.py predict
 
+      - name: Send prediction visual test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_mode }}
+        run: python main.py test-prediction
+        env:
+          TELEGRAM_PREDICTION_BOT_TOKEN: ${{ secrets.TELEGRAM_PREDICTION_BOT_TOKEN }}
+          TELEGRAM_PREDICTION_CHAT_ID: ${{ secrets.TELEGRAM_PREDICTION_CHAT_ID }}
+
       - name: Persist reservation before Telegram
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.test_mode) }}
         run: |
           git config user.name "superlig-al[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -51,6 +66,7 @@ jobs:
           fi
 
       - name: Deliver reserved predictions
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.test_mode) }}
         id: deliver
         continue-on-error: true
         run: python main.py deliver
@@ -59,7 +75,7 @@ jobs:
           TELEGRAM_PREDICTION_CHAT_ID: ${{ secrets.TELEGRAM_PREDICTION_CHAT_ID }}
 
       - name: Persist delivery result
-        if: always()
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.test_mode) }}
         run: |
           git config user.name "superlig-al[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -74,5 +90,5 @@ jobs:
           fi
 
       - name: Fail workflow when Telegram delivery failed
-        if: steps.deliver.outcome == 'failure'
+        if: ${{ steps.deliver.outcome == 'failure' && !(github.event_name == 'workflow_dispatch' && inputs.test_mode) }}
         run: exit 1
