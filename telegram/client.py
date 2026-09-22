@@ -59,12 +59,11 @@ class TelegramClient:
                 value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
                 if value.tzinfo is None:
                     value = value.replace(tzinfo=turkey_tz)
-                local = value.astimezone(turkey_tz)
-                return (local.hour, local.minute, local.second)
+                return value.astimezone(turkey_tz)
             except ValueError:
-                return (99, 99, 99)
+                return datetime.max.replace(tzinfo=turkey_tz)
 
-        # Visual delivery order is based only on Türkiye local match time.
+        # Final delivery order is chronological in Türkiye time.
         # Python's sort is stable, so equal kickoff times retain source order.
         ordered = sorted(predictions, key=kickoff_key)
         for start in range(0, len(ordered), 4):
