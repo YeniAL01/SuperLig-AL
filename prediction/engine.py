@@ -1119,6 +1119,8 @@ class PredictionEngine:
             home_team=fixture.home,
             away_team=fixture.away,
             outcome=winner,
+            home_team_id=fixture.home_id,
+            away_team_id=fixture.away_id,
             data_quality=min(
                 1.0,
                 min(

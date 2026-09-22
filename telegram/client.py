@@ -76,6 +76,8 @@ class TelegramClient:
                 "confidence": self._confidence(one_x_two, prediction.confidence),
                 "winner": winner,
                 "ou25": "ÜST" if ou == "OVER" else "ALT" if ou == "UNDER" else "—",
+                "home_team_id": prediction.home_team_id,
+                "away_team_id": prediction.away_team_id,
             })
         return rows
 

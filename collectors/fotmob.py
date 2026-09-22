@@ -32,7 +32,7 @@ class FotMobCollector:
                 continue
             start = datetime.fromisoformat(status["utcTime"].replace("Z", "+00:00"))
             if start > datetime.now(UTC) and m.get("home", {}).get("name") and m.get("away", {}).get("name"):
-                fixtures.append(Fixture(int(m["id"]), m["home"]["name"], m["away"]["name"], start))
+                fixtures.append(Fixture(int(m["id"]), m["home"]["name"], m["away"]["name"], start, m.get("home", {}).get("id"), m.get("away", {}).get("id")))
         return fixtures
 
     def results(self, league_id):

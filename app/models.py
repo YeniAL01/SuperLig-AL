@@ -12,6 +12,8 @@ class Fixture:
     home: str
     away: str
     start: datetime
+    home_id: int | str | None = None
+    away_id: int | str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +48,8 @@ class Prediction:
     home_team: str = ""
     away_team: str = ""
     outcome: str = ""
+    home_team_id: int | str | None = None
+    away_team_id: int | str | None = None
 
     data_quality: float = 0.0
     model_version: str = ""
