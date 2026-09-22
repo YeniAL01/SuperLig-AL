@@ -1,5 +1,6 @@
 """Read-only prediction previews and explicit Telegram test delivery."""
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from app.models import Prediction
 from database.store import JsonStore
@@ -41,6 +42,19 @@ def run_test(settings, collector, logger):
 def send_prediction_test(settings, collector, logger):
     """Send the next four real fixtures without touching persistent prediction state."""
     predictions = _build_future_predictions(settings, collector, logger, limit=4, days=None)
+    turkey_tz = ZoneInfo("Europe/Istanbul")
+    def local_clock_key(prediction):
+        raw = str(prediction.kickoff or "").strip()
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=turkey_tz)
+            local = dt.astimezone(turkey_tz)
+            return (local.hour, local.minute, local.second)
+        except ValueError:
+            return (99, 99, 99)
+    predictions = sorted(predictions, key=local_clock_key)
+    logger.info("prediction_test_order=%s", [p.kickoff for p in predictions])
     if not predictions:
         logger.warning("prediction_test_skipped reason=no_future_fixture")
         return 0

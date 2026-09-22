@@ -6,7 +6,7 @@ from database.store import JsonStore
 from collectors.fotmob import FotMobCollector
 from learning.adaptive import timestamp
 from learning.performance import score_prediction
-from reporting.png_report import create_weekly_report, create_season_report
+from reporting.png_report import create_combined_report
 from telegram.client import TelegramClient
 from utils.logging import configure_logging
 
@@ -40,12 +40,15 @@ def main()->int:
         logger.info('weekly_report_skipped reason=already_sent round=%s',week_key); return 0
     if force_resend:
         logger.info('weekly_report_force_resend round=%s state_will_not_change=true',week_key)
-    weekly_path=create_weekly_report(weekly,settings.report_dir/f'weekly-round-{week_key}.png')
-    season_path=create_season_report(records,settings.report_dir/f'season-round-{week_key}.png')
+    report_path=create_combined_report(
+        weekly,
+        records,
+        settings.report_dir/f'al-performance-round-{week_key}.png',
+        week_label=f'HAFTA {week_key}',
+    )
     client=TelegramClient(settings.report_token,settings.report_chat_id)
     if not client.enabled: logger.error('weekly_report_delivery_failed reason=missing_telegram_credentials'); return 1
-    if not client.send_photo(weekly_path,'Süper Lig | Haftalık AL Performansı'): return 1
-    if not client.send_photo(season_path,'Süper Lig | Sezon Geneli AL Performansı'): return 1
+    if not client.send_photo(report_path,'Süper Lig | AL Performans Raporu'): return 1
     if not force_resend:
         store.write('report_state',{'last_round':week_key,'sent_at':now.isoformat()})
     logger.info('weekly_report_completed round=%s records=%s season=%s force_resend=%s',week_key,len(weekly),len(records),force_resend); return 0
