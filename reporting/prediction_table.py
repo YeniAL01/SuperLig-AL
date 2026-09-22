@@ -65,16 +65,8 @@ def _paste_logo(image, draw, cx, cy, team, team_id):
 
 
 def _stadium_background(width,height):
-    base=Image.new('RGBA',(width,height),BG); d=ImageDraw.Draw(base)
-    # restrained stadium/pitch atmosphere; keeps the data cards dominant
-    pitch_y=height-125
-    d.rectangle((0,pitch_y,width,height),fill=(4,38,43,255))
-    for y in range(pitch_y, height, 18):
-        d.line((0,y,width,y),fill=(20,78,70,65),width=1)
-    d.line((width//2,pitch_y,width//2,height),fill=(40,126,108,80),width=1)
-    d.arc((width//2-95,pitch_y+15,width//2+95,pitch_y+205),180,360,fill=(40,126,108,80),width=1)
-    d.line((0,pitch_y,width,pitch_y),fill=(24,183,255,80),width=1)
-    return base
+    # Clean dark-navy background. Footer intentionally has no pitch/stadium lines.
+    return Image.new('RGBA',(width,height),BG)
 
 
 def _card(image, draw, box, row, index):
@@ -129,7 +121,13 @@ def _signature_badge(draw,cx,cy):
 def create_prediction_table(rows,output:Path):
     if not rows: raise ValueError('At least one prediction is required')
     # renderer is defensive: correct order even if caller passes unsorted rows
-    rows=sorted(rows,key=lambda r:(_dt(r.get('kickoff')) or datetime.max.replace(tzinfo=TZ),-float(r.get('confidence',0))))
+    def _sort_key(row):
+        kickoff = _dt(row.get('kickoff')) or datetime.max.replace(tzinfo=TZ)
+        confidence = float(row.get('confidence', 0) or 0)
+        return (kickoff, -confidence)
+
+    # First kickoff time ascending; for identical kickoff times confidence descending.
+    rows=sorted(rows,key=_sort_key)
     width=1400; header=172; footer=130; gap=22; margin=30
     cols=1 if len(rows)==1 else 2; card_w=(width-2*margin-gap*(cols-1))//cols; card_h=405
     grid_rows=(len(rows)+cols-1)//cols; height=header+grid_rows*card_h+(grid_rows-1)*gap+footer
