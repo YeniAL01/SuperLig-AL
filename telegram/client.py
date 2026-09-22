@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import logging
 from tempfile import TemporaryDirectory
 
@@ -49,13 +51,21 @@ class TelegramClient:
 
     def prediction_batches(self, predictions: list[Prediction]):
         """At most four match cards per image."""
-        ordered = sorted(
-            predictions,
-            key=lambda p: (
-                p.kickoff,
-                -self._confidence(self._market(p.markets if isinstance(p.markets, dict) else {}, "1x2"), p.confidence),
-            ),
-        )
+        turkey_tz = ZoneInfo("Europe/Istanbul")
+
+        def kickoff_key(prediction: Prediction):
+            raw = str(prediction.kickoff or "").strip()
+            try:
+                value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                if value.tzinfo is None:
+                    value = value.replace(tzinfo=turkey_tz)
+                return value.astimezone(turkey_tz)
+            except ValueError:
+                return datetime.max.replace(tzinfo=turkey_tz)
+
+        # Final delivery order is chronological in Türkiye time.
+        # Python's sort is stable, so equal kickoff times retain source order.
+        ordered = sorted(predictions, key=kickoff_key)
         for start in range(0, len(ordered), 4):
             yield ordered[start:start + 4]
 

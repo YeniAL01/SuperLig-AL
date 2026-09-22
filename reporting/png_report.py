@@ -59,10 +59,10 @@ def _summary_cards(d,records,y,w):
 
 
 def create_weekly_report(records:list[dict[str,Any]],output:Path)->Path:
-    w=1400; row_h=58; h=max(650,330+len(records)*row_h)
+    w=1400; row_h=58; h=max(760,420+len(records)*row_h)
     im=Image.new('RGB',(w,h),BG); d=ImageDraw.Draw(im); _header(d,'HAFTALIK AL PERFORMANSI','TAHMİN • GERÇEK SONUÇ • PUAN',w)
     d.rounded_rectangle((38,125,w-38,185),radius=12,fill='#10283d',outline=BORDER,width=1)
-    headers=[(52,'MAÇ'),(430,'TAHMİN'),(690,'GERÇEK'),(840,'1X2'),(930,'A/U'),(1020,'KG'),(1110,'SKOR'),(1210,'PUAN')]
+    headers=[(52,'MAÇ'),(430,'TAHMİN'),(690,'GERÇEK'),(840,'1X2'),(930,'A / Ü'),(1020,'KG'),(1110,'SKOR'),(1210,'PUAN')]
     for x,t in headers:d.text((x,143),t,font=_font(16,True),fill=MUTED)
     y=190
     for r in records:
