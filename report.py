@@ -1,4 +1,5 @@
 """Süper Lig AI performance report entry point."""
+import os
 from datetime import UTC, datetime, timedelta
 from config.settings import Settings
 from database.store import JsonStore
@@ -34,15 +35,19 @@ def main()->int:
         logger.info('weekly_report_skipped reason=no_performance_records_for_round'); return 0
     state=store.read('report_state',{})
     week_key=str(round_info['round'])
-    if state.get('last_round')==week_key:
+    force_resend=os.getenv('FORCE_RESEND','').strip().lower() in {'1','true','yes','on'}
+    if state.get('last_round')==week_key and not force_resend:
         logger.info('weekly_report_skipped reason=already_sent round=%s',week_key); return 0
+    if force_resend:
+        logger.info('weekly_report_force_resend round=%s state_will_not_change=true',week_key)
     weekly_path=create_weekly_report(weekly,settings.report_dir/f'weekly-round-{week_key}.png')
     season_path=create_season_report(records,settings.report_dir/f'season-round-{week_key}.png')
     client=TelegramClient(settings.report_token,settings.report_chat_id)
     if not client.enabled: logger.error('weekly_report_delivery_failed reason=missing_telegram_credentials'); return 1
     if not client.send_photo(weekly_path,'Süper Lig | Haftalık AL Performansı'): return 1
     if not client.send_photo(season_path,'Süper Lig | Sezon Geneli AL Performansı'): return 1
-    store.write('report_state',{'last_round':week_key,'sent_at':now.isoformat()})
-    logger.info('weekly_report_completed round=%s records=%s season=%s',week_key,len(weekly),len(records)); return 0
+    if not force_resend:
+        store.write('report_state',{'last_round':week_key,'sent_at':now.isoformat()})
+    logger.info('weekly_report_completed round=%s records=%s season=%s force_resend=%s',week_key,len(weekly),len(records),force_resend); return 0
 
 if __name__=='__main__': raise SystemExit(main())
