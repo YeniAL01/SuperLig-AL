@@ -65,7 +65,7 @@ def _paste_logo(image, draw, cx, cy, team, team_id):
 
 
 def _stadium_background(width,height):
-    # Clean dark-navy background. Footer intentionally has no pitch/stadium lines.
+    # Clean dark-navy canvas; footer stays free of pitch/stadium decoration.
     return Image.new('RGBA',(width,height),BG)
 
 
@@ -107,27 +107,26 @@ def _card(image, draw, box, row, index):
 
 
 def _signature_badge(draw,cx,cy):
-    r=48
-    draw.ellipse((cx-r,cy-r,cx+r,cy+r),fill='#061522',outline=GOLD,width=3)
-    draw.ellipse((cx-r+6,cy-r+6,cx+r-6,cy+r-6),outline='#a77d25',width=1)
-    draw.text((cx,cy-r+13),'DESIGNED BY',font=_font(7,True),fill=GOLD,anchor='mm')
-    crown=[(cx-14,cy-15),(cx-11,cy-28),(cx-4,cy-20),(cx,cy-32),(cx+5,cy-20),(cx+13,cy-28),(cx+11,cy-15)]
-    draw.polygon(crown,fill=GOLD); draw.rectangle((cx-14,cy-15,cx+11,cy-11),fill=GOLD)
-    draw.text((cx,cy+5),'Sercan',font=_font(18,italic=True),fill=WHITE,anchor='mm')
-    draw.line((cx-28,cy+20,cx+28,cy+20),fill=GOLD,width=2)
-    draw.text((cx,cy+33),'VERİ • ANALİZ',font=_font(6,True),fill=GOLD,anchor='mm')
+    # Compact rubber-stamp look: double ring, crown and angled Sercan signature.
+    r=49
+    ink=GOLD
+    draw.ellipse((cx-r,cy-r,cx+r,cy+r),outline=ink,width=3)
+    draw.ellipse((cx-r+6,cy-r+6,cx+r-6,cy+r-6),outline='#b58b2d',width=2)
+    # small intentional gaps give a stamped/inked feel
+    for a,b in [((-42,-20),(-38,-18)),((35,-30),(39,-27)),((-28,38),(-23,40)),((26,40),(31,38))]:
+        draw.line((cx+a[0],cy+a[1],cx+b[0],cy+b[1]),fill=BG,width=3)
+    crown=[(cx-14,cy-14),(cx-11,cy-28),(cx-4,cy-20),(cx,cy-32),(cx+5,cy-20),(cx+13,cy-28),(cx+11,cy-14)]
+    draw.polygon(crown,fill=ink); draw.rectangle((cx-14,cy-14,cx+11,cy-10),fill=ink)
+    draw.text((cx,cy-r+11),'DESIGNED BY',font=_font(6,True),fill=ink,anchor='mm')
+    draw.text((cx,cy+6),'Sercan',font=_font(18,italic=True),fill=WHITE,anchor='mm')
+    draw.line((cx-29,cy+20,cx+29,cy+20),fill=ink,width=2)
+    draw.text((cx,cy+33),'VERİ • ANALİZ • YAPAY ZEKA',font=_font(5,True),fill=ink,anchor='mm')
 
 
 def create_prediction_table(rows,output:Path):
     if not rows: raise ValueError('At least one prediction is required')
-    # renderer is defensive: correct order even if caller passes unsorted rows
-    def _sort_key(row):
-        kickoff = _dt(row.get('kickoff')) or datetime.max.replace(tzinfo=TZ)
-        confidence = float(row.get('confidence', 0) or 0)
-        return (kickoff, -confidence)
-
-    # First kickoff time ascending; for identical kickoff times confidence descending.
-    rows=sorted(rows,key=_sort_key)
+    # Chronological order only; Python sort is stable for identical kickoff times.
+    rows=sorted(rows,key=lambda r: _dt(r.get('kickoff')) or datetime.max.replace(tzinfo=TZ))
     width=1400; header=172; footer=130; gap=22; margin=30
     cols=1 if len(rows)==1 else 2; card_w=(width-2*margin-gap*(cols-1))//cols; card_h=405
     grid_rows=(len(rows)+cols-1)//cols; height=header+grid_rows*card_h+(grid_rows-1)*gap+footer
