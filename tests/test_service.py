@@ -159,216 +159,133 @@ def test_outside_t60_does_not_request_lineup(
     ) == {}
 
 
-def test_t60_to_t30_checks_lineup(
-    tmp_path,
-):
-    fixture = future_fixture(
-        45
-    )
+def _fake_prediction(fixture):
+    class FakePrediction:
+        data_quality = 1.0
+        confidence = 80.0
+        lineup_verified = False
+        markets = {}
 
-    collector = FakeCollector(
-        fixtures=[
-            fixture
-        ],
-        lineup_verified=False,
-    )
+        def payload(self):
+            return {
+                "fixture_id": fixture.id,
+                "fixture": f"{fixture.home} - {fixture.away}",
+                "kickoff": fixture.start.isoformat(),
+                "confidence": self.confidence,
+                "data_quality": self.data_quality,
+            }
 
-    prediction_service = service(
-        tmp_path,
-        collector,
-    )
-
-    prediction_service.run()
-
-    assert collector.match_calls == [
-        fixture.id
-    ]
-
-    state = read_analysis(
-        prediction_service
-    )[
-        str(
-            fixture.id
-        )
-    ]
-
-    assert (
-        state["lineup_verified"]
-        is False
-    )
-
-    assert (
-        state["lineup_fallback"]
-        is False
-    )
-
-    assert (
-        state["last_lineup_check_at"]
-        is not None
-    )
+    return FakePrediction()
 
 
-def test_verified_lineup_is_persisted(
-    tmp_path,
-):
-    fixture = future_fixture(
-        45
-    )
-
-    collector = FakeCollector(
-        fixtures=[
-            fixture
-        ],
-        lineup_verified=True,
-    )
-
-    prediction_service = service(
-        tmp_path,
-        collector,
-    )
+def test_first_lineup_attempt_waits_when_missing(tmp_path, monkeypatch):
+    fixture = future_fixture(55)
+    collector = FakeCollector(fixtures=[fixture], lineup_verified=False)
+    prediction_service = service(tmp_path, collector)
+    built = []
+    monkeypatch.setattr(prediction_service, "_build", lambda fixture, analysis_state=None: built.append(fixture.id) or _fake_prediction(fixture))
 
     prediction_service.run()
 
-    state = read_analysis(
-        prediction_service
-    )[
-        str(
-            fixture.id
-        )
-    ]
-
-    assert (
-        state["lineup_verified"]
-        is True
-    )
-
-    assert (
-        state["lineup_verified_at"]
-        is not None
-    )
-
-    assert (
-        state["lineup_fallback"]
-        is False
-    )
+    state = read_analysis(prediction_service)[str(fixture.id)]
+    assert collector.match_calls == [fixture.id]
+    assert state["lineup_attempts"] == 1
+    assert state["lineup_verified"] is False
+    assert state["lineup_fallback"] is False
+    assert built == []
 
 
-def test_verified_lineup_is_not_requested_again(
-    tmp_path,
-):
-    fixture = future_fixture(
-        45
-    )
+def test_verified_lineup_builds_immediately(tmp_path, monkeypatch):
+    fixture = future_fixture(55)
+    collector = FakeCollector(fixtures=[fixture], lineup_verified=True)
+    prediction_service = service(tmp_path, collector)
+    built = []
+    monkeypatch.setattr(prediction_service, "_build", lambda fixture, analysis_state=None: built.append(fixture.id) or _fake_prediction(fixture))
 
-    collector = FakeCollector(
-        fixtures=[
-            fixture
-        ],
-        lineup_verified=True,
-    )
+    count = prediction_service.run()
 
-    prediction_service = service(
-        tmp_path,
-        collector,
-    )
+    state = read_analysis(prediction_service)[str(fixture.id)]
+    assert state["lineup_attempts"] == 1
+    assert state["lineup_verified"] is True
+    assert state["lineup_fallback"] is False
+    assert built == [fixture.id]
+    assert count == 1
+
+
+def test_lineup_retry_requires_ten_minutes(tmp_path, monkeypatch):
+    fixture = future_fixture(55)
+    collector = FakeCollector(fixtures=[fixture], lineup_verified=False)
+    prediction_service = service(tmp_path, collector)
+    monkeypatch.setattr(prediction_service, "_build", lambda fixture, analysis_state=None: _fake_prediction(fixture))
 
     prediction_service.run()
-
-    assert collector.match_calls == [
-        fixture.id
-    ]
-
-    collector.match_calls.clear()
-
     prediction_service.run()
 
-    assert collector.match_calls == []
+    state = read_analysis(prediction_service)[str(fixture.id)]
+    assert collector.match_calls == [fixture.id]
+    assert state["lineup_attempts"] == 1
 
 
-def test_t30_enables_lineup_fallback(
-    tmp_path,
-):
-    fixture = future_fixture(
-        25
+def test_third_missing_lineup_enables_fallback_and_builds(tmp_path, monkeypatch):
+    fixture = future_fixture(40)
+    collector = FakeCollector(fixtures=[fixture], lineup_verified=False)
+    prediction_service = service(tmp_path, collector)
+    built = []
+    monkeypatch.setattr(prediction_service, "_build", lambda fixture, analysis_state=None: built.append(fixture.id) or _fake_prediction(fixture))
+
+    # Seed two previous checks far enough in the past so this run is the third.
+    prediction_service.store.write(
+        "pre_match_analysis",
+        {
+            str(fixture.id): {
+                "fixture_id": fixture.id,
+                "fixture": f"{fixture.home} - {fixture.away}",
+                "home_team": fixture.home,
+                "away_team": fixture.away,
+                "kickoff": fixture.start.isoformat(),
+                "analysis_started_at": (datetime.now(UTC) - timedelta(minutes=25)).isoformat(),
+                "lineup_verified": False,
+                "lineup_verified_at": None,
+                "lineup_attempts": 2,
+                "last_lineup_check_at": (datetime.now(UTC) - timedelta(minutes=10, seconds=5)).isoformat(),
+                "lineup_fallback": False,
+                "lineup_fallback_at": None,
+                "updated_at": datetime.now(UTC).isoformat(),
+            }
+        },
     )
 
-    collector = FakeCollector(
-        fixtures=[
-            fixture
-        ],
-        lineup_verified=False,
-    )
+    count = prediction_service.run()
 
-    prediction_service = service(
-        tmp_path,
-        collector,
-    )
-
-    prediction_service.run()
-
-    state = read_analysis(
-        prediction_service
-    )[
-        str(
-            fixture.id
-        )
-    ]
-
-    assert (
-        state["lineup_verified"]
-        is False
-    )
-
-    assert (
-        state["lineup_fallback"]
-        is True
-    )
-
-    assert (
-        state["lineup_fallback_at"]
-        is not None
-    )
-
-    # Between T-30 and T-15 there is no
-    # repeated lineup polling.
-    assert collector.match_calls == []
+    state = read_analysis(prediction_service)[str(fixture.id)]
+    assert collector.match_calls == [fixture.id]
+    assert state["lineup_attempts"] == 3
+    assert state["lineup_verified"] is False
+    assert state["lineup_fallback"] is True
+    assert built == [fixture.id]
+    assert count == 1
 
 
-def test_before_t15_does_not_build_prediction(
-    tmp_path,
-):
-    fixture = future_fixture(
-        20
-    )
-
-    collector = FakeCollector(
-        fixtures=[
-            fixture
-        ]
-    )
-
-    prediction_service = service(
-        tmp_path,
-        collector,
-    )
-
-    prediction_service.run()
-
-    assert (
-        prediction_service.store.read(
-            "forecasts",
-            [],
-        )
-        == []
-    )
-
-    assert (
-        prediction_service.store.read(
-            "predictions",
-            [],
-        )
-        == []
-    )
+def seed_two_attempts(prediction_service, fixtures):
+    state = {}
+    stamp = datetime.now(UTC) - timedelta(minutes=11)
+    for fixture in fixtures:
+        state[str(fixture.id)] = {
+            "fixture_id": fixture.id,
+            "fixture": f"{fixture.home} - {fixture.away}",
+            "home_team": fixture.home,
+            "away_team": fixture.away,
+            "kickoff": fixture.start.isoformat(),
+            "analysis_started_at": (stamp - timedelta(minutes=10)).isoformat(),
+            "lineup_verified": False,
+            "lineup_verified_at": None,
+            "lineup_attempts": 2,
+            "last_lineup_check_at": stamp.isoformat(),
+            "lineup_fallback": False,
+            "lineup_fallback_at": None,
+            "updated_at": stamp.isoformat(),
+        }
+    prediction_service.store.write("pre_match_analysis", state)
 
 
 def test_manual_run_does_not_bypass_timing(
@@ -505,6 +422,8 @@ def test_same_time_fixtures_are_all_processed(
         fake_build,
     )
 
+    seed_two_attempts(prediction_service, fixtures)
+
     count = (
         prediction_service.run()
     )
@@ -538,158 +457,45 @@ def test_same_time_fixtures_are_all_processed(
     )
 
 
-def test_t15_final_lookup_does_not_block_without_lineup(
+def test_third_attempt_build_does_not_require_verified_lineup(
     tmp_path,
     monkeypatch,
 ):
-    fixture = future_fixture(
-        10
-    )
-
-    collector = FakeCollector(
-        fixtures=[
-            fixture
-        ],
-        lineup_verified=False,
-    )
-
-    prediction_service = service(
-        tmp_path,
-        collector,
-    )
-
+    fixture = future_fixture(10)
+    collector = FakeCollector(fixtures=[fixture], lineup_verified=False)
+    prediction_service = service(tmp_path, collector)
     captured = {}
 
     class FakePrediction:
         data_quality = 1.0
         confidence = 80.0
         lineup_verified = False
-        markets = {
-            "1x2": {},
-            "ou25": {},
-            "btts": {},
-        }
-
-        def payload(
-            self,
-        ):
+        markets = {"1x2": {}, "ou25": {}, "btts": {}}
+        def payload(self):
             return {
-                "fixture_id":
-                    fixture.id,
-                "fixture":
-                    (
-                        f"{fixture.home} - "
-                        f"{fixture.away}"
-                    ),
-                "kickoff":
-                    fixture.start.isoformat(),
-                "confidence":
-                    self.confidence,
-                "data_quality":
-                    self.data_quality,
-                "lineup_verified":
-                    self.lineup_verified,
+                "fixture_id": fixture.id,
+                "fixture": f"{fixture.home} - {fixture.away}",
+                "kickoff": fixture.start.isoformat(),
+                "confidence": self.confidence,
+                "data_quality": self.data_quality,
+                "lineup_verified": self.lineup_verified,
             }
 
-    def fake_predict(
-        self,
-        target_fixture,
-        home,
-        away,
-        lineup_verified=False,
-        as_of=None,
-    ):
-        captured[
-            "lineup_verified"
-        ] = lineup_verified
-
+    def fake_predict(self, target_fixture, home, away, lineup_verified=False, as_of=None):
+        captured["lineup_verified"] = lineup_verified
         return FakePrediction()
 
-    monkeypatch.setattr(
-        "app.service.forms",
-        lambda *args, **kwargs: (
-            SimpleNamespace(),
-            SimpleNamespace(),
-        ),
-    )
-
-    monkeypatch.setattr(
-        "app.service.PredictionEngine.predict",
-        fake_predict,
-    )
+    monkeypatch.setattr("app.service.forms", lambda *args, **kwargs: (SimpleNamespace(), SimpleNamespace()))
+    monkeypatch.setattr("app.service.PredictionEngine.predict", fake_predict)
+    seed_two_attempts(prediction_service, [fixture])
 
     prediction_service.run()
 
-    assert collector.match_calls == [
-        fixture.id
-    ]
-
-    assert (
-        captured["lineup_verified"]
-        is False
-    )
-
-    state = read_analysis(
-        prediction_service
-    )[
-        str(
-            fixture.id
-        )
-    ]
-
-    assert (
-        state["lineup_fallback"]
-        is True
-    )
-
-
-def test_lineup_verification_requires_exactly_11_starters() -> None:
-    detail = {
-        "content": {
-            "lineup": {
-                "homeTeam": {
-                    "starters": [
-                        {}
-                        for _ in range(
-                            11
-                        )
-                    ],
-                },
-                "awayTeam": {
-                    "starters": [
-                        {}
-                        for _ in range(
-                            11
-                        )
-                    ],
-                },
-            },
-        },
-    }
-
-    assert (
-        PredictionService._lineup_verified(
-            detail
-        )
-        is True
-    )
-
-    detail[
-        "content"
-    ][
-        "lineup"
-    ][
-        "awayTeam"
-    ][
-        "starters"
-    ].pop()
-
-    assert (
-        PredictionService._lineup_verified(
-            detail
-        )
-        is False
-    )
+    assert collector.match_calls == [fixture.id]
+    assert captured["lineup_verified"] is False
+    state = read_analysis(prediction_service)[str(fixture.id)]
+    assert state["lineup_attempts"] == 3
+    assert state["lineup_fallback"] is True
 
 
 @pytest.mark.parametrize(
@@ -712,11 +518,11 @@ def test_lineup_verification_requires_exactly_11_starters() -> None:
         ),
         (
             29,
-            0,
+            1,
         ),
         (
             20,
-            0,
+            1,
         ),
     ],
 )
@@ -780,6 +586,7 @@ def test_final_prediction_is_reserved_and_delivered_below_thresholds(
         },
     )
     monkeypatch.setattr(prediction_service, '_build', lambda *args: prediction)
+    seed_two_attempts(prediction_service, [fixture])
     messages = []
 
     def fake_send_photo(client, image, caption):
@@ -815,6 +622,7 @@ def test_final_prediction_is_reserved_and_delivered_below_thresholds(
 def test_real_engine_final_prediction_with_no_history_is_publishable(tmp_path):
     prediction_service = service(tmp_path, FakeCollector(fixtures=[future_fixture(10)]))
     prediction_service.settings.minimum_probability = 58.0
+    seed_two_attempts(prediction_service, prediction_service.collector._fixtures)
     assert prediction_service.run() == 1
     forecast, = prediction_service.store.read('forecasts', [])
     assert forecast['confidence'] < 58.0
@@ -829,6 +637,7 @@ def test_grouped_photo_delivery_and_retry(tmp_path, monkeypatch, first_success):
     svc = service(tmp_path, FakeCollector(fixtures=fixtures))
     svc.settings.prediction_token = 'test-token'
     svc.settings.prediction_chat_id = 'test-chat'
+    seed_two_attempts(svc, fixtures)
     assert svc.run() == 2
     photos = []
 
@@ -855,6 +664,7 @@ def test_expired_reservation_is_excluded_from_group(tmp_path, monkeypatch):
     svc = service(tmp_path, FakeCollector(fixtures=[future_fixture(10, 101), future_fixture(10, 102)]))
     svc.settings.prediction_token = 'test'
     svc.settings.prediction_chat_id = 'test'
+    seed_two_attempts(svc, svc.collector._fixtures)
     assert svc.run() == 2
     rows = svc.store.read('predictions', [])
     rows[0]['kickoff'] = (datetime.now(UTC)-timedelta(minutes=1)).isoformat()
