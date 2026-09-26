@@ -28,6 +28,7 @@ concurrency:
 
 jobs:
   learn:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.AUTOMATION_ENABLED == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -40,6 +41,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
         run: |
