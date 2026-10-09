@@ -23,7 +23,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: super-lig-learning
+  group: superlig-state
   cancel-in-progress: false
 
 jobs:
