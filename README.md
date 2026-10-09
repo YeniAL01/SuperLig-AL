@@ -1,9 +1,12 @@
 # SuperLig-AL — adaptive-v2
 
 Süper Lig maçları için maç öncesi olasılık tahmini ve sonuçlardan öğrenme.
-Bu sürüm yüksek doğruluk garantisi vermez. Gerçek tahmin başarısı henüz ölçülmedi.
-Paketin başlangıç verisi, 17 Eylül 2026'da FotMob'dan alınan 45 tamamlanmış maçtır.
-Bu maçlar takım formunu/Elo'yu başlatır; tahmin başarısı olarak sayılmaz.
+Bu sürüm yüksek doğruluk garantisi vermez. 20 Eylül 2026 itibarıyla kaydedilmiş 9
+maç öncesi tahminin 6'sı 1X2'de doğru, ancak 9/9 tahmin ev sahibi yönündedir;
+aynı 6/9 sonuç, körlemesine ev sahibi seçen basit stratejiyle de elde edilir.
+Bu örneklem üstünlük veya kalibrasyon kanıtı değildir. Paket, 17 Eylül 2026'da
+FotMob'dan alınmış 45 başlangıç maçı dahil 54 tamamlanmış maç içerir.
+Başlangıç maçları modelin maç öncesi başarısı olarak sayılmaz.
 
 ## Kurulum
 
@@ -30,12 +33,20 @@ python main.py learn
 python main.py metrics
 ```
 
-- predict: T-15 ile başlama zamanı arasında bir kez tahmin kilitler.
-  %58 model olasılığı ve her iki takım için en az 5 geçmiş maç şartını sağlayanları yayınlar.
-  Eşik Settings.minimum_probability içinde değiştirilebilir; doğruluk garantisi değildir.
+- predict: T-60 içinde resmi ilk 11'i 10 dakika aralıklarla en fazla 3 kez kontrol eder;
+  resmi ilk 11 gelirse hemen, üçüncü denemede hâlâ gelmezse eksik kadro bilgisiyle
+  tahmin üretir. GitHub cron gecikirse T-15'te deneme sayısı dolmadan da güvenli
+  fallback ile tahmin üretebilir. Başlama anı geçtikten sonra yeni tahmin üretilmez.
+  **Mevcut canlı yayın politikası, güven ve örnek sayısından bağımsız olarak tüm
+  oluşturulan tahminleri Telegram'a gönderir.** `minimum_probability=58` şu anda
+  canlı yayın akışında kullanılmaz; sadece `backtest` komutunda uygulanır.
+  Düşük güvenli tahminler de yayınlanabilir; bu, modelin doğru olduğu anlamına gelmez.
+  Üretimde filtre uygulanması ayrı bir ürün/politika kararı gerektirir.
 - learn: bitmiş sonuçları eşleştirir, performans ve model ağırlıklarını günceller.
-- metrics: tüm tahminlerin ve yayınlananların başarısını, kapsama oranını, log loss,
-  Brier skoru, güvenilirlik gruplarını ve yaklaşık %95 isabet aralığını gösterir.
+- metrics: tüm tahminlerin ve yayınlananların 1X2 başarısını, kapsama oranını,
+  log loss, Brier skoru, güvenilirlik gruplarını ve yaklaşık %95 isabet aralığını gösterir.
+  KG ve Alt/Üst sonuçları için `learning_state.json` veya `learning.performance.market_performance`
+  üzerinden ayrıca değerlendirme yapılır.
 - report.py: mevcut PNG raporunu üretip Telegram rapor botuna gönderebilir.
 
 Telegram için TELEGRAM_PREDICTION_BOT_TOKEN / TELEGRAM_PREDICTION_CHAT_ID,
@@ -58,8 +69,10 @@ Bu paketin hazırlanması sırasında Telegram mesajı gönderilmedi.
    Eski sürüm kayıtları yeni model ağırlıklarını eğitmez.
 
 Bu bir çevrimiçi model ağırlıklandırma sistemidir; kendi kaynak kodunu değiştirmez.
-Gösterilen yüzde modelin sonuç olasılığıdır; henüz saha verisinde kalibre edilmiş
-başarı oranı değildir. İlk 11 bilgisi sadece doğrulama bayrağıdır; oyuncu etkileri
+Telegram görselindeki yüzde modelin **tahmin güvenidir**; tarihsel isabet yüzdesi
+veya garanti değildir. Öğrenme sonrası kalibrasyon çarpanı, normalleştirilmiş
+olasılıklardan farklı değer üretebilir. Resmi ilk 11 doğrulaması oyuncu gücü veya
+sakatlık etkisini modele katmaz; yalnızca doğrulama bayrağı üretir. İlk 11 bilgisi sadece doğrulama bayrağıdır; oyuncu etkileri
 modellenmediğinden olasılığa keyfî bonus verilmez. Tahmini skor, seçilen sonuçla
 uyumlu en olası skordur; toplamda en olası kesin skor farklı olabilir.
 score_probability bu koşulla seçilen skorun koşulsuz model olasılığını saklar.
@@ -107,7 +120,9 @@ Gerçek geçmiş değerlendirmesi için yukarıdaki zaman bilgileri olan CSV ger
 - delivery.json: başarılı Telegram gönderimleri.
 
 Bozuk JSON'da sistem sessizce sıfırlanmaz; hata vererek durur.
-GitHub tahmin/öğrenme/rapor işlerinde ortak concurrency grubu yazmaları sıraya koyar.
+GitHub tahmin/öğrenme/rapor işlerinde ortak `superlig-state` concurrency grubu
+repo içi veri dosyalarına yazmaları sıraya koyar. GitHub Actions cron tetikleyicileri
+zaman garantisi vermez; T-15 emniyet penceresi de tetiklenmeyen işi başlatamaz.
 Başarılı CLI komutları maç sayısından bağımsız 0 çıkış kodu döndürür.
 Yerelde aynı data klasörüne aynı anda birden fazla süreç çalıştırmayın.
 GitHub zamanlayıcısı T-15 çalışmasını garanti etmez; dakikalık sunucu zamanlayıcısı
@@ -117,7 +132,21 @@ daha uygundur. FotMob API resmî SLA sunmaz; şema değişiklikleri izlenmelidir
 Gönderim hatasında kayıtlı tahmin başlama zamanına kadar yeniden denenir.
 Telegram başarılı gönderimden hemen sonra süreç çökerse tekrar mesaj mümkün olabilir;
 Bot API üzerinden tam olarak bir kez teslim garantisi yoktur.
-T-18 yedek penceresi kaldırıldı; T-15 sırasında maç ayrıntısı alınamazsa kayıtlı
-sonuç geçmişiyle tahmin yapılır. Eski xG/Form/ensemble modülleri uyumluluk için
+T-18 yedek penceresi kaldırıldı; son 15 dakikada daha önceki kadro kontrolleri
+kaçırılmışsa mevcut sonuç geçmişiyle tahmin yapılır. Eski xG/Form/ensemble modülleri uyumluluk için
 korunmuştur; üretim hattı yeni PredictionEngine kullanır.
 
+
+## 9 Ekim 2026 aktivasyon öncesi uyarı
+
+Bu ZIP'in içindeki durum 23 Eylül 2026'da güncellenmiş öğrenme kayıtlarına dayanır.
+Gerçek GitHub repo değişkenleri (`AUTOMATION_ENABLED`), secrets, son Actions logları ve
+canlı FotMob API yanıtı bu çevrimdışı incelemede doğrulanamadı.
+Ayrıca FotMob'un gayriresmî uç noktalarının erişim/izin koşulları ayrıca incelenmelidir.
+İlk çalıştırmada önce `python -m pytest tests -q`, ardından
+`python main.py test` ve Telegram göndermeyen bir doğrulama çalışması yapın.
+
+Düşük güvenli tüm tahminleri yayınlama kararı özellikle gözden geçirilmelidir.
+`minimum_probability=58` eşiğini otomatik uygulamak bugüne kadar kaydedilen 9
+tahminin hiçbirini yayımlamayacaktı; bu yüzden eşiği kanıtlanmış bir doğruluk
+artışı gibi sunmak yanlıştır.

@@ -301,8 +301,11 @@ class PredictionService:
                         type(exc).__name__,
                     )
 
+            # GitHub cron is best-effort. If previous polls were delayed or
+            # skipped, never let the three-attempt rule silently prevent a
+            # forecast during the final 15 minutes before kickoff.
             if (
-                attempts >= MAX_LINEUP_ATTEMPTS
+                (attempts >= MAX_LINEUP_ATTEMPTS or minutes <= 15)
                 and not bool(state.get("lineup_verified"))
                 and not bool(state.get("lineup_fallback"))
             ):
@@ -844,6 +847,13 @@ class PredictionService:
             lineup,
             dict,
         ):
+            return False
+
+        # Eleven projected players are not an officially confirmed XI.
+        # FotMob exposes the distinction through lineupType. Do not turn
+        # predicted starters into a false lineup_verified signal.
+        lineup_type = str(lineup.get("lineupType", "")).strip().lower()
+        if lineup_type not in {"standard", "confirmed"}:
             return False
 
         return all(

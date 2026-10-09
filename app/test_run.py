@@ -13,6 +13,7 @@ def _build_future_predictions(settings, collector, logger, limit=4, days=None):
     store = JsonStore(settings.data_dir)
     history = merge_results(store.read("results", []), collector.results(settings.league_id))
     records = store.read("performance", [])
+    learning_state = store.read("learning_state", {})
     now = datetime.now(UTC)
     predictions = []
 
@@ -22,7 +23,7 @@ def _build_future_predictions(settings, collector, logger, limit=4, days=None):
         if days is not None and fixture.start > now + timedelta(days=days):
             continue
         home, away = forms(history, fixture.home, fixture.away, now)
-        prediction = PredictionEngine(records).predict(fixture, home, away, as_of=now)
+        prediction = PredictionEngine(records, learning_state).predict(fixture, home, away, as_of=now)
         predictions.append(prediction)
         logger.info(
             "PREVIEW fixture=%s outcome=%s probability=%.2f quality=%.2f",

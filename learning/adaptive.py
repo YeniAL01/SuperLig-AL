@@ -255,6 +255,10 @@ def _default_market_state() -> dict:
         "status": "collecting",
         "last_review_at": None,
         "last_adapted_at": None,
+        # Idempotency keys prevent daily learn jobs from reusing unchanged
+        # settled evidence as though it were newly observed.
+        "last_review_sample_key": None,
+        "last_adapted_sample_key": None,
     }
 
 
@@ -319,6 +323,8 @@ def normalize_learning_state(
                 "status",
                 "last_review_at",
                 "last_adapted_at",
+                "last_review_sample_key",
+                "last_adapted_sample_key",
             ):
                 if key in old:
                     target[key] = old[key]
@@ -1225,6 +1231,13 @@ def update_learning_state(
         ][market]
 
         total = len(rows)
+        # A settled fixture is immutable in the production ledger. Count,
+        # latest fixture id and settlement time together identify newly
+        # available evidence without tying adaptation to scheduler runs.
+        sample_key = (
+            f"{total}:{rows[-1]['fixture_id']}:{rows[-1]['settled_at']}"
+            if rows else None
+        )
 
         correct = sum(
             1
@@ -1317,31 +1330,18 @@ def update_learning_state(
             "status"
         ] = "review"
 
-        market_state[
-            "last_review_at"
-        ] = now_iso
-
-        review_event = {
-            "at": now_iso,
-            "market": market,
-            "type": "review",
-            "samples": total,
-            "recent_20_error_rate":
-                error_20,
-            "season_accuracy":
-                market_state[
-                    "season_accuracy"
-                ],
-            "reason":
-                (
-                    "recent_20_error_rate_"
-                    "at_or_above_35_percent"
-                ),
-        }
-
-        events.append(
-            review_event
-        )
+        if market_state.get("last_review_sample_key") != sample_key:
+            market_state["last_review_at"] = now_iso
+            market_state["last_review_sample_key"] = sample_key
+            events.append({
+                "at": now_iso,
+                "market": market,
+                "type": "review",
+                "samples": total,
+                "recent_20_error_rate": error_20,
+                "season_accuracy": market_state["season_accuracy"],
+                "reason": "recent_20_error_rate_at_or_above_35_percent",
+            })
 
         if total < MIN_ADAPT_SAMPLES:
             continue
@@ -1372,6 +1372,12 @@ def update_learning_state(
             else "adapting"
         )
 
+        # Re-running the same settled sample set must not change the model.
+        # This is essential because scheduled learn runs often find no new
+        # results for several consecutive days.
+        if market_state.get("last_adapted_sample_key") == sample_key:
+            continue
+
         factor_changes = (
             _adapt_factors(
                 market_state,
@@ -1388,9 +1394,8 @@ def update_learning_state(
             )
         )
 
-        market_state[
-            "last_adapted_at"
-        ] = now_iso
+        market_state["last_adapted_at"] = now_iso
+        market_state["last_adapted_sample_key"] = sample_key
 
         adaptation_event = {
             "at": now_iso,

@@ -92,7 +92,7 @@ def _card(image, draw, box, row, index):
     conf=float(row.get('confidence',0)); low=conf<58; color=RED if low else GREEN
     bar=(x1+24,y1+238,x2-24,y1+302)
     draw.rounded_rectangle(bar,14,fill='#351218' if low else '#082c25',outline=color,width=2)
-    draw.text((x1+50,y1+255),'▥  Başarı Oranı',font=_font(18,True),fill=WHITE)
+    draw.text((x1+50,y1+255),'▥  Tahmin Güveni',font=_font(18,True),fill=WHITE)
     draw.text((x1+245,y1+246),f"%{conf:.1f}",font=_font(32,True),fill=color)
     if low:
         draw.rounded_rectangle((x2-185,y1+248,x2-42,y1+291),10,fill='#4a1119')
@@ -142,6 +142,6 @@ def create_prediction_table(rows,output:Path):
         rr=i//cols; cc=i%cols; x=margin+cc*(card_w+gap); y=header+rr*(card_h+gap)
         _card(image,draw,(x,y,x+card_w,y+card_h),row,i+1)
     fy=height-footer+42
-    draw.text((48,fy),'▥  VERİ GÜCÜ     ◉  YAPAY ZEKA DESTEĞİ     ◎  DAHA İSABETLİ TAHMİNLER',font=_font(15,True),fill=MUTED)
+    draw.text((48,fy),'▥  VERİ  ◉  OLASILIK MODELİ     ◎  GARANTİ DEĞİL, ÖLÇÜLEBİLİR TAHMİN',font=_font(15,True),fill=MUTED)
     _signature_badge(draw,width-82,height-64)
     output=Path(output); output.parent.mkdir(parents=True,exist_ok=True); image.convert('RGB').save(output,'PNG',quality=95); return output

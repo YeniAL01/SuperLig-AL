@@ -64,6 +64,7 @@ class FakeCollector:
         return {
             "content": {
                 "lineup": {
+                    "lineupType": "standard" if self.lineup_verified else "predicted",
                     "homeTeam": {
                         "starters":
                             list(
