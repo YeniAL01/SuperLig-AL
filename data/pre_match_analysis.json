@@ -6,12 +6,12 @@
     "away_team": "Fenerbahçe",
     "kickoff": "2026-10-10T16:00:00+00:00",
     "analysis_started_at": "2026-10-10T15:09:20.246736+00:00",
-    "lineup_verified": false,
-    "lineup_attempts": 1,
-    "lineup_verified_at": null,
-    "last_lineup_check_at": "2026-10-10T15:09:20.246736+00:00",
+    "lineup_verified": true,
+    "lineup_attempts": 2,
+    "lineup_verified_at": "2026-10-10T15:27:05.060412+00:00",
+    "last_lineup_check_at": "2026-10-10T15:27:04.897176+00:00",
     "lineup_fallback": false,
     "lineup_fallback_at": null,
-    "updated_at": "2026-10-10T15:09:20.334840+00:00"
+    "updated_at": "2026-10-10T15:27:05.060712+00:00"
   }
 }
