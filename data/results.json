@@ -558,5 +558,25 @@
     "away_goals": 2,
     "available_at": "2026-10-10T14:32:59.395752+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904760",
+    "home_team": "Alanyaspor",
+    "away_team": "Erzurumspor FK",
+    "kickoff": "2026-10-10T13:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 0,
+    "available_at": "2026-10-10T15:09:19.518054+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904766",
+    "home_team": "Samsunspor",
+    "away_team": "Trabzonspor",
+    "kickoff": "2026-10-10T13:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 3,
+    "available_at": "2026-10-10T15:09:19.518054+00:00",
+    "source": "fotmob"
   }
 ]

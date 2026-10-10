@@ -1,1 +1,17 @@
-{}
+{
+  "5904761": {
+    "fixture_id": 5904761,
+    "fixture": "Rizespor - Fenerbahçe",
+    "home_team": "Rizespor",
+    "away_team": "Fenerbahçe",
+    "kickoff": "2026-10-10T16:00:00+00:00",
+    "analysis_started_at": "2026-10-10T15:09:20.246736+00:00",
+    "lineup_verified": false,
+    "lineup_attempts": 1,
+    "lineup_verified_at": null,
+    "last_lineup_check_at": "2026-10-10T15:09:20.246736+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-10T15:09:20.334840+00:00"
+  }
+}
