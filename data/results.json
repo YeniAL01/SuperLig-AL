@@ -578,5 +578,15 @@
     "away_goals": 3,
     "available_at": "2026-10-10T15:09:19.518054+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904761",
+    "home_team": "Rizespor",
+    "away_team": "Fenerbahçe",
+    "kickoff": "2026-10-10T16:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 3,
+    "available_at": "2026-10-10T17:57:57.353825+00:00",
+    "source": "fotmob"
   }
 ]
