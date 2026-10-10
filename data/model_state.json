@@ -1,6 +1,6 @@
 {
   "version": "adaptive-v2",
-  "settled_matches": 9,
+  "settled_matches": 10,
   "weights": {
     "poisson": 0.3333333333333333,
     "elo": 0.3333333333333333,

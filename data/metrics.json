@@ -1,52 +1,52 @@
 {
   "all": {
+    "matches": 10,
+    "count": 10,
+    "accuracy": 0.6,
+    "winner_accuracy": 0.6,
+    "exact_score_accuracy": 0.0,
+    "log_loss": 1.0042145347245646,
+    "brier_score": 0.6011743540362742
+  },
+  "eligible": {
     "matches": 9,
     "count": 9,
     "accuracy": 0.6666666666666666,
     "winner_accuracy": 0.6666666666666666,
     "exact_score_accuracy": 0.0,
-    "log_loss": 0.9938418534411144,
-    "brier_score": 0.5928970174906394
-  },
-  "eligible": {
-    "matches": 8,
-    "count": 8,
-    "accuracy": 0.75,
-    "winner_accuracy": 0.75,
-    "exact_score_accuracy": 0.0,
-    "log_loss": 0.9498217313549545,
-    "brier_score": 0.561696232423349
+    "log_loss": 0.96623805745725,
+    "brier_score": 0.5743600269259754
   },
   "delivered": {
-    "matches": 8,
-    "count": 8,
-    "accuracy": 0.75,
-    "winner_accuracy": 0.75,
+    "matches": 9,
+    "count": 9,
+    "accuracy": 0.6666666666666666,
+    "winner_accuracy": 0.6666666666666666,
     "exact_score_accuracy": 0.0,
-    "log_loss": 0.9498217313549545,
-    "brier_score": 0.561696232423349
+    "log_loss": 0.96623805745725,
+    "brier_score": 0.5743600269259754
   },
   "published": {
-    "matches": 8,
-    "count": 8,
-    "accuracy": 0.75,
-    "winner_accuracy": 0.75,
+    "matches": 9,
+    "count": 9,
+    "accuracy": 0.6666666666666666,
+    "winner_accuracy": 0.6666666666666666,
     "exact_score_accuracy": 0.0,
-    "log_loss": 0.9498217313549545,
-    "brier_score": 0.561696232423349
+    "log_loss": 0.96623805745725,
+    "brier_score": 0.5743600269259754
   },
-  "eligible_coverage": 0.8888888888888888,
-  "delivery_coverage": 0.8888888888888888,
-  "coverage": 0.8888888888888888,
+  "eligible_coverage": 0.9,
+  "delivery_coverage": 0.9,
+  "coverage": 0.9,
   "reliability": [
     {
       "range": [
         40,
         50
       ],
-      "matches": 9,
-      "predicted": 0.43288888888888893,
-      "observed": 0.6666666666666666
+      "matches": 10,
+      "predicted": 0.42988,
+      "observed": 0.6
     }
   ]
 }
