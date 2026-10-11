@@ -1,1 +1,17 @@
-{}
+{
+  "5904758": {
+    "fixture_id": 5904758,
+    "fixture": "Gaziantep FK - Çorum FK",
+    "home_team": "Gaziantep FK",
+    "away_team": "Çorum FK",
+    "kickoff": "2026-10-11T13:00:00+00:00",
+    "analysis_started_at": "2026-10-11T12:22:57.638338+00:00",
+    "lineup_verified": true,
+    "lineup_attempts": 1,
+    "lineup_verified_at": "2026-10-11T12:22:57.910190+00:00",
+    "last_lineup_check_at": "2026-10-11T12:22:57.638338+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-11T12:22:57.910372+00:00"
+  }
+}
