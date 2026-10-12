@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-11T20:39:43.735687+00:00",
+  "updated_at": "2026-10-12T20:45:05.278001+00:00",
   "markets": {
     "1x2": {
       "baseline_weights": {
@@ -24,31 +24,31 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 13,
+      "total_samples": 14,
       "total_correct": 7,
-      "total_wrong": 6,
-      "season_accuracy": 0.5384615384615384,
-      "recent_20_error_rate": 0.46153846153846156,
-      "recent_30_error_rate": 0.46153846153846156,
+      "total_wrong": 7,
+      "season_accuracy": 0.5,
+      "recent_20_error_rate": 0.5,
+      "recent_30_error_rate": 0.5,
       "recent_20": {
-        "samples": 13,
+        "samples": 14,
         "correct": 7,
-        "wrong": 6,
-        "accuracy": 0.5384615384615384,
-        "error_rate": 0.46153846153846156
+        "wrong": 7,
+        "accuracy": 0.5,
+        "error_rate": 0.5
       },
       "recent_30": {
-        "samples": 13,
+        "samples": 14,
         "correct": 7,
-        "wrong": 6,
-        "accuracy": 0.5384615384615384,
-        "error_rate": 0.46153846153846156
+        "wrong": 7,
+        "accuracy": 0.5,
+        "error_rate": 0.5
       },
       "calibration": {
-        "samples": 13,
-        "mean_confidence": 0.4302461538461539,
-        "accuracy": 0.5384615384615384,
-        "gap": -0.10821538461538455
+        "samples": 14,
+        "mean_confidence": 0.4280571428571428,
+        "accuracy": 0.5,
+        "gap": -0.0719428571428572
       },
       "status": "collecting_4_weeks",
       "last_review_at": null,
@@ -78,31 +78,31 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 13,
-      "total_correct": 10,
+      "total_samples": 14,
+      "total_correct": 11,
       "total_wrong": 3,
-      "season_accuracy": 0.7692307692307693,
-      "recent_20_error_rate": 0.23076923076923078,
-      "recent_30_error_rate": 0.23076923076923078,
+      "season_accuracy": 0.7857142857142857,
+      "recent_20_error_rate": 0.21428571428571427,
+      "recent_30_error_rate": 0.21428571428571427,
       "recent_20": {
-        "samples": 13,
-        "correct": 10,
+        "samples": 14,
+        "correct": 11,
         "wrong": 3,
-        "accuracy": 0.7692307692307693,
-        "error_rate": 0.23076923076923078
+        "accuracy": 0.7857142857142857,
+        "error_rate": 0.21428571428571427
       },
       "recent_30": {
-        "samples": 13,
-        "correct": 10,
+        "samples": 14,
+        "correct": 11,
         "wrong": 3,
-        "accuracy": 0.7692307692307693,
-        "error_rate": 0.23076923076923078
+        "accuracy": 0.7857142857142857,
+        "error_rate": 0.21428571428571427
       },
       "calibration": {
-        "samples": 13,
-        "mean_confidence": 0.5679461538461539,
-        "accuracy": 0.7692307692307693,
-        "gap": -0.2012846153846154
+        "samples": 14,
+        "mean_confidence": 0.5738357142857143,
+        "accuracy": 0.7857142857142857,
+        "gap": -0.21187857142857136
       },
       "status": "collecting_4_weeks",
       "last_review_at": null,
@@ -132,31 +132,31 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 13,
+      "total_samples": 14,
       "total_correct": 4,
-      "total_wrong": 9,
-      "season_accuracy": 0.3076923076923077,
-      "recent_20_error_rate": 0.6923076923076923,
-      "recent_30_error_rate": 0.6923076923076923,
+      "total_wrong": 10,
+      "season_accuracy": 0.2857142857142857,
+      "recent_20_error_rate": 0.7142857142857143,
+      "recent_30_error_rate": 0.7142857142857143,
       "recent_20": {
-        "samples": 13,
+        "samples": 14,
         "correct": 4,
-        "wrong": 9,
-        "accuracy": 0.3076923076923077,
-        "error_rate": 0.6923076923076923
+        "wrong": 10,
+        "accuracy": 0.2857142857142857,
+        "error_rate": 0.7142857142857143
       },
       "recent_30": {
-        "samples": 13,
+        "samples": 14,
         "correct": 4,
-        "wrong": 9,
-        "accuracy": 0.3076923076923077,
-        "error_rate": 0.6923076923076923
+        "wrong": 10,
+        "accuracy": 0.2857142857142857,
+        "error_rate": 0.7142857142857143
       },
       "calibration": {
-        "samples": 13,
-        "mean_confidence": 0.5995307692307692,
-        "accuracy": 0.3076923076923077,
-        "gap": 0.2918384615384615
+        "samples": 14,
+        "mean_confidence": 0.6049071428571429,
+        "accuracy": 0.2857142857142857,
+        "gap": 0.31919285714285717
       },
       "status": "collecting_4_weeks",
       "last_review_at": null,
