@@ -618,5 +618,15 @@
     "away_goals": 1,
     "available_at": "2026-10-11T17:58:42.491395+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904759",
+    "home_team": "Eyüpspor",
+    "away_team": "Göztepe",
+    "kickoff": "2026-10-12T17:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 4,
+    "available_at": "2026-10-12T19:04:12.155254+00:00",
+    "source": "fotmob"
   }
 ]
