@@ -628,5 +628,15 @@
     "away_goals": 4,
     "available_at": "2026-10-12T19:04:12.155254+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904772",
+    "home_team": "Çorum FK",
+    "away_team": "Rizespor",
+    "kickoff": "2026-10-16T17:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 1,
+    "available_at": "2026-10-16T20:56:40.732348+00:00",
+    "source": "fotmob"
   }
 ]
