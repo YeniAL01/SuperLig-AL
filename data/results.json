@@ -638,5 +638,15 @@
     "away_goals": 1,
     "available_at": "2026-10-16T20:56:40.732348+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904775",
+    "home_team": "Erzurumspor FK",
+    "away_team": "Eyüpspor",
+    "kickoff": "2026-10-17T10:30:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-10-17T12:42:05.957003+00:00",
+    "source": "fotmob"
   }
 ]

@@ -1,1 +1,32 @@
-{}
+{
+  "5904770": {
+    "fixture_id": 5904770,
+    "fixture": "Amed Sportif - Konyaspor",
+    "home_team": "Amed Sportif",
+    "away_team": "Konyaspor",
+    "kickoff": "2026-10-17T13:00:00+00:00",
+    "analysis_started_at": "2026-10-17T12:42:07.122772+00:00",
+    "lineup_verified": true,
+    "lineup_attempts": 1,
+    "lineup_verified_at": "2026-10-17T12:42:07.213419+00:00",
+    "last_lineup_check_at": "2026-10-17T12:42:07.122772+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-17T12:42:07.213777+00:00"
+  },
+  "5904771": {
+    "fixture_id": 5904771,
+    "fixture": "Gençlerbirliği - Galatasaray",
+    "home_team": "Gençlerbirliği",
+    "away_team": "Galatasaray",
+    "kickoff": "2026-10-17T13:00:00+00:00",
+    "analysis_started_at": "2026-10-17T12:42:07.229726+00:00",
+    "lineup_verified": true,
+    "lineup_attempts": 1,
+    "lineup_verified_at": "2026-10-17T12:42:07.285682+00:00",
+    "last_lineup_check_at": "2026-10-17T12:42:07.229726+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-17T12:42:07.286013+00:00"
+  }
+}
