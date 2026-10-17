@@ -1,17 +1,1 @@
-{
-  "5904773": {
-    "fixture_id": 5904773,
-    "fixture": "Fenerbahçe - Alanyaspor",
-    "home_team": "Fenerbahçe",
-    "away_team": "Alanyaspor",
-    "kickoff": "2026-10-17T16:00:00+00:00",
-    "analysis_started_at": "2026-10-17T15:58:22.517679+00:00",
-    "lineup_verified": true,
-    "lineup_attempts": 1,
-    "lineup_verified_at": "2026-10-17T15:58:22.676189+00:00",
-    "last_lineup_check_at": "2026-10-17T15:58:22.517679+00:00",
-    "lineup_fallback": false,
-    "lineup_fallback_at": null,
-    "updated_at": "2026-10-17T15:58:22.676684+00:00"
-  }
-}
+{}

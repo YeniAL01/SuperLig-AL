@@ -668,5 +668,15 @@
     "away_goals": 1,
     "available_at": "2026-10-17T15:58:21.634742+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904773",
+    "home_team": "Fenerbahçe",
+    "away_team": "Alanyaspor",
+    "kickoff": "2026-10-17T16:00:00.000Z",
+    "home_goals": 3,
+    "away_goals": 0,
+    "available_at": "2026-10-17T18:21:02.494021+00:00",
+    "source": "fotmob"
   }
 ]
