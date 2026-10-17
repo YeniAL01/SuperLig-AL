@@ -648,5 +648,25 @@
     "away_goals": 0,
     "available_at": "2026-10-17T12:42:05.957003+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904770",
+    "home_team": "Amed Sportif",
+    "away_team": "Konyaspor",
+    "kickoff": "2026-10-17T13:00:00.000Z",
+    "home_goals": 1,
+    "away_goals": 0,
+    "available_at": "2026-10-17T15:58:21.634742+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904771",
+    "home_team": "Gençlerbirliği",
+    "away_team": "Galatasaray",
+    "kickoff": "2026-10-17T13:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 1,
+    "available_at": "2026-10-17T15:58:21.634742+00:00",
+    "source": "fotmob"
   }
 ]

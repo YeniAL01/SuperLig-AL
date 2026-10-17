@@ -2572,5 +2572,167 @@
       }
     },
     "publishable": true
+  },
+  {
+    "fixture_id": 5904773,
+    "fixture": "Fenerbahçe - Alanyaspor",
+    "winner": "Fenerbahçe",
+    "home_goals": 2,
+    "away_goals": 1,
+    "confidence": 46.74,
+    "lineup_verified": true,
+    "note": "Model olasılığıdır; gerçek başarı garantisi değildir. Skor, seçilen maç sonucuyla uyumlu en olası skordur.",
+    "probabilities": {
+      "HOME": 0.4674278183372883,
+      "DRAW": 0.26068721899173664,
+      "AWAY": 0.271884962670975
+    },
+    "component_probabilities": {
+      "poisson": {
+        "HOME": 0.5232111163396529,
+        "DRAW": 0.23278426245486897,
+        "AWAY": 0.24400462120547817
+      },
+      "elo": {
+        "HOME": 0.429072338672212,
+        "DRAW": 0.279277394520341,
+        "AWAY": 0.29165026680744693
+      },
+      "baseline": {
+        "HOME": 0.45,
+        "DRAW": 0.27,
+        "AWAY": 0.28
+      }
+    },
+    "model_weights": {
+      "poisson": 0.3333333333333333,
+      "elo": 0.3333333333333333,
+      "baseline": 0.3333333333333333
+    },
+    "kickoff": "2026-10-17T16:00:00+00:00",
+    "created_at": "2026-10-17T15:58:22.677392+00:00",
+    "home_team": "Fenerbahçe",
+    "away_team": "Alanyaspor",
+    "outcome": "HOME",
+    "home_team_id": "8695",
+    "away_team_id": "4678",
+    "data_quality": 0.7,
+    "model_version": "adaptive-v2",
+    "score_probability": 0.08699956070327229,
+    "markets": {
+      "1x2": {
+        "selection": "HOME",
+        "confidence": 46.74,
+        "raw_confidence": 46.74,
+        "probabilities": {
+          "HOME": 0.4674278183372883,
+          "DRAW": 0.26068721899173664,
+          "AWAY": 0.271884962670975
+        },
+        "base_probabilities": {
+          "HOME": 0.4674278183372883,
+          "DRAW": 0.26068721899173664,
+          "AWAY": 0.271884962670975
+        },
+        "factors": {
+          "form": 0.04761904761904767,
+          "home_away": 0.18,
+          "elo": 0.005168139380090793,
+          "goals": 0.17200000000000007,
+          "lineup": 1.0,
+          "availability": 0.0,
+          "odds_support": 0.0,
+          "model_signal": 0.1955428556663133
+        },
+        "learning_status": "collecting_4_weeks",
+        "learning_samples": 14,
+        "learning_strength": 1.0
+      },
+      "ou25": {
+        "selection": "OVER",
+        "confidence": 54.97,
+        "raw_confidence": 54.97,
+        "probabilities": {
+          "OVER": 0.5496824001454733,
+          "UNDER": 0.4503175998545268
+        },
+        "base_probabilities": {
+          "OVER": 0.5496824001454733,
+          "UNDER": 0.4503175998545268
+        },
+        "factors": {
+          "form": 0.04761904761904767,
+          "home_away": 0.18,
+          "elo": 0.005168139380090793,
+          "goals": 0.17200000000000007,
+          "lineup": 1.0,
+          "availability": 0.0,
+          "odds_support": 0.0,
+          "model_signal": 0.1955428556663133
+        },
+        "learning_status": "collecting_4_weeks",
+        "learning_samples": 14,
+        "learning_strength": 1.0
+      },
+      "btts": {
+        "selection": "YES",
+        "confidence": 57.62,
+        "raw_confidence": 57.62,
+        "probabilities": {
+          "YES": 0.5762200781084283,
+          "NO": 0.42377992189157176
+        },
+        "base_probabilities": {
+          "YES": 0.5762200781084283,
+          "NO": 0.42377992189157176
+        },
+        "factors": {
+          "form": 0.04761904761904767,
+          "home_away": 0.18,
+          "elo": 0.005168139380090793,
+          "goals": 0.17200000000000007,
+          "lineup": 1.0,
+          "availability": 0.0,
+          "odds_support": 0.0,
+          "model_signal": 0.1955428556663133
+        },
+        "learning_status": "collecting_4_weeks",
+        "learning_samples": 14,
+        "learning_strength": 1.0
+      }
+    },
+    "factor_snapshot": {
+      "1x2": {
+        "form": 0.04761904761904767,
+        "home_away": 0.18,
+        "elo": 0.005168139380090793,
+        "goals": 0.17200000000000007,
+        "lineup": 1.0,
+        "availability": 0.0,
+        "odds_support": 0.0,
+        "model_signal": 0.1955428556663133
+      },
+      "ou25": {
+        "form": 0.04761904761904767,
+        "home_away": 0.18,
+        "elo": 0.005168139380090793,
+        "goals": 0.17200000000000007,
+        "lineup": 1.0,
+        "availability": 0.0,
+        "odds_support": 0.0,
+        "model_signal": 0.1955428556663133
+      },
+      "btts": {
+        "form": 0.04761904761904767,
+        "home_away": 0.18,
+        "elo": 0.005168139380090793,
+        "goals": 0.17200000000000007,
+        "lineup": 1.0,
+        "availability": 0.0,
+        "odds_support": 0.0,
+        "model_signal": 0.1955428556663133
+      }
+    },
+    "publishable": true
   }
 ]
