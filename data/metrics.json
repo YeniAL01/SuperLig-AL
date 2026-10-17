@@ -1,51 +1,51 @@
 {
   "all": {
-    "matches": 14,
-    "count": 14,
-    "accuracy": 0.5,
-    "winner_accuracy": 0.5,
-    "exact_score_accuracy": 0.07142857142857142,
-    "log_loss": 1.0309826604530465,
-    "brier_score": 0.6202757656938437
+    "matches": 17,
+    "count": 17,
+    "accuracy": 0.5294117647058824,
+    "winner_accuracy": 0.5294117647058824,
+    "exact_score_accuracy": 0.11764705882352941,
+    "log_loss": 0.99494672939818,
+    "brier_score": 0.5948053836668886
   },
   "eligible": {
-    "matches": 13,
-    "count": 13,
-    "accuracy": 0.5384615384615384,
-    "winner_accuracy": 0.5384615384615384,
-    "exact_score_accuracy": 0.07692307692307693,
-    "log_loss": 1.0067503397086353,
-    "brier_score": 0.6031813401296037
+    "matches": 16,
+    "count": 16,
+    "accuracy": 0.5625,
+    "winner_accuracy": 0.5625,
+    "exact_score_accuracy": 0.125,
+    "log_loss": 0.9730057231024166,
+    "brier_score": 0.579324264019259
   },
   "delivered": {
-    "matches": 13,
-    "count": 13,
-    "accuracy": 0.5384615384615384,
-    "winner_accuracy": 0.5384615384615384,
-    "exact_score_accuracy": 0.07692307692307693,
-    "log_loss": 1.0067503397086353,
-    "brier_score": 0.6031813401296037
+    "matches": 16,
+    "count": 16,
+    "accuracy": 0.5625,
+    "winner_accuracy": 0.5625,
+    "exact_score_accuracy": 0.125,
+    "log_loss": 0.9730057231024166,
+    "brier_score": 0.579324264019259
   },
   "published": {
-    "matches": 13,
-    "count": 13,
-    "accuracy": 0.5384615384615384,
-    "winner_accuracy": 0.5384615384615384,
-    "exact_score_accuracy": 0.07692307692307693,
-    "log_loss": 1.0067503397086353,
-    "brier_score": 0.6031813401296037
+    "matches": 16,
+    "count": 16,
+    "accuracy": 0.5625,
+    "winner_accuracy": 0.5625,
+    "exact_score_accuracy": 0.125,
+    "log_loss": 0.9730057231024166,
+    "brier_score": 0.579324264019259
   },
-  "eligible_coverage": 0.9285714285714286,
-  "delivery_coverage": 0.9285714285714286,
-  "coverage": 0.9285714285714286,
+  "eligible_coverage": 0.9411764705882353,
+  "delivery_coverage": 0.9411764705882353,
+  "coverage": 0.9411764705882353,
   "reliability": [
     {
       "range": [
         0,
         40
       ],
-      "matches": 1,
-      "predicted": 0.3996,
+      "matches": 2,
+      "predicted": 0.39115,
       "observed": 0.0
     },
     {
@@ -53,9 +53,9 @@
         40,
         50
       ],
-      "matches": 13,
-      "predicted": 0.4302461538461539,
-      "observed": 0.5384615384615384
+      "matches": 15,
+      "predicted": 0.4368,
+      "observed": 0.6
     }
   ]
 }
