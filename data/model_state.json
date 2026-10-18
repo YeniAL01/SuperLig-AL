@@ -1,9 +1,9 @@
 {
   "version": "adaptive-v2",
-  "settled_matches": 17,
+  "settled_matches": 18,
   "weights": {
-    "poisson": 0.35516501545720247,
-    "elo": 0.32377257357645317,
-    "baseline": 0.3210624109663444
+    "poisson": 0.35731323528544645,
+    "elo": 0.3222465194848351,
+    "baseline": 0.3204402452297184
   }
 }
