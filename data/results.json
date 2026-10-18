@@ -698,5 +698,15 @@
     "away_goals": 2,
     "available_at": "2026-10-18T16:26:42.932763+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904769",
+    "home_team": "Başakşehir",
+    "away_team": "Gaziantep FK",
+    "kickoff": "2026-10-18T16:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 1,
+    "available_at": "2026-10-18T18:48:59.835998+00:00",
+    "source": "fotmob"
   }
 ]
