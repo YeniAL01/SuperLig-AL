@@ -678,5 +678,15 @@
     "away_goals": 0,
     "available_at": "2026-10-17T18:21:02.494021+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904768",
+    "home_team": "Kasımpaşa",
+    "away_team": "Samsunspor",
+    "kickoff": "2026-10-18T10:30:00.000Z",
+    "home_goals": 4,
+    "away_goals": 1,
+    "available_at": "2026-10-18T12:58:44.201290+00:00",
+    "source": "fotmob"
   }
 ]
