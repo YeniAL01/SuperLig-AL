@@ -708,5 +708,15 @@
     "away_goals": 1,
     "available_at": "2026-10-18T18:48:59.835998+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904767",
+    "home_team": "Trabzonspor",
+    "away_team": "Beşiktaş",
+    "kickoff": "2026-10-19T17:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-10-19T20:58:13.055359+00:00",
+    "source": "fotmob"
   }
 ]
