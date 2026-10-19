@@ -1,0 +1,96 @@
+{
+  "round": "8",
+  "generated_at": "2026-10-19T21:53:50.753790+00:00",
+  "weekly": {
+    "all": {
+      "matches": 5,
+      "count": 5,
+      "accuracy": 0.6,
+      "winner_accuracy": 0.6,
+      "exact_score_accuracy": 0.2,
+      "combined_score": 42.994,
+      "log_loss": 0.9053370585517919,
+      "brier_score": 0.5331256702126661
+    },
+    "eligible": {
+      "matches": 5,
+      "count": 5,
+      "accuracy": 0.6,
+      "winner_accuracy": 0.6,
+      "exact_score_accuracy": 0.2,
+      "combined_score": 42.994,
+      "log_loss": 0.9053370585517919,
+      "brier_score": 0.5331256702126661
+    },
+    "delivered": {
+      "matches": 5,
+      "count": 5,
+      "accuracy": 0.6,
+      "winner_accuracy": 0.6,
+      "exact_score_accuracy": 0.2,
+      "combined_score": 42.994,
+      "log_loss": 0.9053370585517919,
+      "brier_score": 0.5331256702126661
+    },
+    "published": {
+      "matches": 5,
+      "count": 5,
+      "accuracy": 0.6,
+      "winner_accuracy": 0.6,
+      "exact_score_accuracy": 0.2,
+      "combined_score": 42.994,
+      "log_loss": 0.9053370585517919,
+      "brier_score": 0.5331256702126661
+    },
+    "combined": {
+      "count": 5,
+      "combined_score": 42.994,
+      "field_scores": {
+        "1x2": 0.6,
+        "exact_score": 0.2,
+        "combined": 42.994,
+        "ou25": 0.4,
+        "btts": 0.2
+      },
+      "weights": {
+        "winner": 0.25,
+        "exact_score": 0.25,
+        "goal_markets": 0.2,
+        "probability_quality": 0.2,
+        "goal_distance": 0.1
+      }
+    },
+    "history": [
+      {
+        "period": 1,
+        "matches": 5,
+        "combined_score": 42.994,
+        "winner_accuracy": 0.6,
+        "exact_score_accuracy": 0.2
+      }
+    ],
+    "eligible_coverage": 1.0,
+    "delivery_coverage": 1.0,
+    "coverage": 1.0,
+    "reliability": [
+      {
+        "range": [
+          0,
+          40
+        ],
+        "matches": 1,
+        "predicted": 0.38270000000000004,
+        "observed": 0.0
+      },
+      {
+        "range": [
+          40,
+          50
+        ],
+        "matches": 4,
+        "predicted": 0.46204999999999996,
+        "observed": 0.75
+      }
+    ]
+  }
+}
