@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from math import log, sqrt
 
 from learning.adaptive import (
@@ -18,6 +19,125 @@ MARKET_LABELS = {
     "ou25": "2.5 Alt/Üst",
     "btts": "KG Var/Yok",
 }
+
+COMBINED_SCORE_WEIGHTS = {
+    "winner": 0.25,
+    "exact_score": 0.25,
+    "goal_markets": 0.20,
+    "probability_quality": 0.20,
+    "goal_distance": 0.10,
+}
+
+
+
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def _safe_div(numerator: float, denominator: float) -> float | None:
+    if denominator <= 0:
+        return None
+    return numerator / denominator
+
+
+def _result_map(results: list[dict]) -> dict[str, dict]:
+    return {
+        str(row.get("fixture_id")): row
+        for row in results
+        if row.get("fixture_id") is not None
+    }
+
+
+def _goal_distance_score(prediction: dict, actual_home: int, actual_away: int) -> float | None:
+    if "home_goals" not in prediction or "away_goals" not in prediction:
+        return None
+
+    try:
+        predicted_home = int(prediction.get("home_goals"))
+        predicted_away = int(prediction.get("away_goals"))
+    except (TypeError, ValueError):
+        return None
+
+    total_error = abs(predicted_home - actual_home) + abs(predicted_away - actual_away)
+    # Six total goal swings already represent a very poor forecast.
+    return _clamp01(1.0 - min(1.0, total_error / 6.0))
+
+
+def _probability_quality(probabilities: dict | None, label: str) -> float | None:
+    if not valid_probs(probabilities):
+        return None
+
+    try:
+        probability = max(float(probabilities[label]), 1e-15)
+        log_quality = 1.0 - min(1.0, -log(probability) / log(3))
+        brier_score = sum(
+            (
+                float(probabilities[key])
+                - int(key == label)
+            ) ** 2
+            for key in LABELS
+        )
+        brier_quality = 1.0 - min(1.0, float(brier_score) / 2.0)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    return (log_quality + brier_quality) / 2.0
+
+
+def _record_combined_score(record: dict) -> float | None:
+    components = []
+
+    winner = record.get("winner_correct")
+    if winner is not None:
+        components.append(("winner", 1.0 if bool(winner) else 0.0))
+
+    score = record.get("score_correct")
+    if score is not None:
+        components.append(("exact_score", 1.0 if bool(score) else 0.0))
+
+    market_hits = []
+    if "ou25_correct" in record:
+        market_hits.append(1.0 if bool(record["ou25_correct"]) else 0.0)
+    if "btts_correct" in record:
+        market_hits.append(1.0 if bool(record["btts_correct"]) else 0.0)
+    if market_hits:
+        components.append(("goal_markets", sum(market_hits) / len(market_hits)))
+
+    actual = record.get("actual_outcome")
+    probability_quality = None
+    if isinstance(actual, str):
+        probability_quality = _probability_quality(record.get("probabilities"), actual)
+    if probability_quality is not None:
+        components.append(("probability_quality", probability_quality))
+
+    actual_home = record.get("actual_home")
+    actual_away = record.get("actual_away")
+    if actual_home is not None and actual_away is not None:
+        goal_distance = _goal_distance_score(record, int(actual_home), int(actual_away))
+        if goal_distance is not None:
+            components.append(("goal_distance", goal_distance))
+
+    if not components:
+        return None
+
+    weighted_total = 0.0
+    weight_total = 0.0
+
+    for name, value in components:
+        weight = COMBINED_SCORE_WEIGHTS.get(name, 0.0)
+        weighted_total += weight * value
+        weight_total += weight
+
+    if weight_total <= 0:
+        return None
+
+    return round((weighted_total / weight_total) * 100.0, 2)
+
+
+def _ranked_score(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return round(_clamp01(value / 100.0) * 100.0, 2)
 
 
 def score_prediction(
@@ -342,6 +462,16 @@ def _group(
         else None
     )
 
+    combined_scores = [
+        _record_combined_score(row)
+        for row in rows
+    ]
+    combined_scores = [
+        score
+        for score in combined_scores
+        if score is not None
+    ]
+
     return {
         "matches": count,
         "count": count,
@@ -360,6 +490,11 @@ def _group(
             )
             / len(score_rows)
             if score_rows
+            else None
+        ),
+        "combined_score": (
+            sum(combined_scores) / len(combined_scores)
+            if combined_scores
             else None
         ),
         "log_loss": (
@@ -519,6 +654,16 @@ def summarize(
                 eligible
             ),
 
+        "combined":
+            combined_performance(
+                records
+            ),
+
+        "history":
+            history_summary(
+                records
+            ),
+
         "eligible_coverage": (
             len(eligible)
             / total
@@ -601,6 +746,195 @@ def publication_stats(
                 else None
             ),
     }
+
+
+def combined_performance(
+    records: list[dict],
+) -> dict:
+    """Combined success score with separate field-level signals."""
+    rows = [
+        row
+        for row in records
+        if isinstance(row, dict)
+    ]
+
+    combined_scores = [
+        _record_combined_score(row)
+        for row in rows
+    ]
+    combined_scores = [
+        score
+        for score in combined_scores
+        if score is not None
+    ]
+
+    field_scores = {
+        "1x2": _group(rows).get("winner_accuracy"),
+        "exact_score": _group(rows).get("exact_score_accuracy"),
+        "combined": (
+            sum(combined_scores) / len(combined_scores)
+            if combined_scores
+            else None
+        ),
+    }
+
+    market_rows = {
+        "ou25": [
+            row for row in rows if "ou25_correct" in row
+        ],
+        "btts": [
+            row for row in rows if "btts_correct" in row
+        ],
+    }
+
+    for market, market_rows_list in market_rows.items():
+        if market_rows_list:
+            field_scores[market] = _rate(
+                sum(1 for row in market_rows_list if row.get(f"{market}_correct")),
+                len(market_rows_list),
+            )
+
+    return {
+        "count": len(rows),
+        "combined_score": (
+            sum(combined_scores) / len(combined_scores)
+            if combined_scores
+            else None
+        ),
+        "field_scores": field_scores,
+        "weights": COMBINED_SCORE_WEIGHTS,
+    }
+
+
+def history_summary(
+    records: list[dict],
+    *,
+    chunk_size: int = 20,
+    limit: int = 6,
+) -> list[dict]:
+    """Show the model's own history in chronological chunks."""
+    eligible_rows = [
+        row
+        for row in records
+        if isinstance(row, dict)
+    ]
+
+    def _sort_key(row: dict):
+        value = row.get("settled_at") or row.get("kickoff") or row.get("created_at")
+        try:
+            return value or ""
+        except TypeError:
+            return ""
+
+    eligible_rows = sorted(
+        eligible_rows,
+        key=_sort_key,
+    )
+
+    if chunk_size <= 0:
+        chunk_size = 20
+
+    chunks = [
+        eligible_rows[i : i + chunk_size]
+        for i in range(0, len(eligible_rows), chunk_size)
+    ]
+
+    history = []
+
+    for index, chunk in enumerate(chunks[-limit:], 1):
+        group = _group(chunk)
+        history.append(
+            {
+                "period": index,
+                "matches": len(chunk),
+                "combined_score": group.get("combined_score"),
+                "winner_accuracy": group.get("winner_accuracy"),
+                "exact_score_accuracy": group.get("exact_score_accuracy"),
+            }
+        )
+
+    return history
+
+
+def shared_match_comparison(
+    predictions: list[dict],
+    results: list[dict],
+) -> dict:
+    """Compare component models on the exact same matches."""
+    result_map = _result_map(results)
+    rows = []
+
+    for prediction in predictions:
+        fixture_id = str(prediction.get("fixture_id"))
+        actual = result_map.get(fixture_id)
+
+        if not actual:
+            continue
+
+        home = actual.get("home_goals")
+        away = actual.get("away_goals")
+
+        try:
+            home_goals = int(home)
+            away_goals = int(away)
+        except (TypeError, ValueError):
+            continue
+
+        actual_label = (
+            "HOME"
+            if home_goals > away_goals
+            else "AWAY"
+            if away_goals > home_goals
+            else "DRAW"
+        )
+
+        probabilities = prediction.get("component_probabilities", {})
+        if not isinstance(probabilities, dict):
+            continue
+
+        for model_name, probs in probabilities.items():
+            if not valid_probs(probs):
+                continue
+
+            predicted_label = max(
+                probs,
+                key=lambda key: float(probs[key]),
+            )
+
+            rows.append(
+                {
+                    "model": model_name,
+                    "fixture_id": fixture_id,
+                    "actual_outcome": actual_label,
+                    "predicted_outcome": predicted_label,
+                    "winner_correct": predicted_label == actual_label,
+                    "log_loss": -log(max(float(probs[actual_label]), 1e-15)),
+                    "brier_score": sum(
+                        (
+                            float(probs[key])
+                            - int(key == actual_label)
+                        ) ** 2
+                        for key in LABELS
+                    ),
+                }
+            )
+
+    grouped = defaultdict(list)
+
+    for row in rows:
+        grouped[row["model"]].append(row)
+
+    output = {}
+
+    for model, model_rows in sorted(grouped.items()):
+        output[model] = _group(model_rows)
+        output[model]["matches"] = len(model_rows)
+
+    return {
+        "matches": len({row["fixture_id"] for row in rows}),
+        "models": output,
+    }
+
 
 def market_performance(
     predictions: list[dict],
@@ -1090,6 +1424,19 @@ def overall_performance(
             factor_performance(
                 eligible_predictions,
                 results,
+            ),
+        "same_match_comparison":
+            shared_match_comparison(
+                eligible_predictions,
+                results,
+            ),
+        "history":
+            history_summary(
+                eligible_predictions,
+            ),
+        "combined":
+            combined_performance(
+                eligible_predictions,
             ),
     }
 

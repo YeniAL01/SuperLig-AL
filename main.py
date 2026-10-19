@@ -16,6 +16,7 @@ from learning.adaptive import (
 )
 from learning.history import merge_results
 from learning.performance import (
+    overall_performance,
     score_prediction,
     summarize,
 )
@@ -315,6 +316,17 @@ def learn(settings, collector):
     store.write(
         "learning_state",
         learning_state,
+    )
+
+    performance_report = overall_performance(
+        forecasts,
+        results,
+        learning_state,
+    )
+
+    store.write(
+        "performance_report",
+        performance_report,
     )
 
     # --------------------------------------------------------------

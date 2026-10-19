@@ -5,7 +5,7 @@ from config.settings import Settings
 from database.store import JsonStore
 from collectors.fotmob import FotMobCollector
 from learning.adaptive import timestamp
-from learning.performance import score_prediction
+from learning.performance import score_prediction, summarize
 from reporting.png_report import create_combined_report
 from telegram.client import TelegramClient
 from utils.logging import configure_logging
@@ -33,6 +33,7 @@ def main()->int:
     weekly=[r for r in records if str(r.get('fixture_id')) in fixture_ids]
     if not weekly:
         logger.info('weekly_report_skipped reason=no_performance_records_for_round'); return 0
+    summary = summarize(weekly)
     state=store.read('report_state',{})
     week_key=str(round_info['round'])
     force_resend=os.getenv('FORCE_RESEND','').strip().lower() in {'1','true','yes','on'}
@@ -45,6 +46,14 @@ def main()->int:
         records,
         settings.report_dir/f'al-performance-round-{week_key}.png',
         week_label=f'HAFTA {week_key}',
+    )
+    store.write(
+        'report_summary',
+        {
+            'round': week_key,
+            'generated_at': now.isoformat(),
+            'weekly': summary,
+        },
     )
     client=TelegramClient(settings.report_token,settings.report_chat_id)
     if not client.enabled: logger.error('weekly_report_delivery_failed reason=missing_telegram_credentials'); return 1
