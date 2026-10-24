@@ -728,5 +728,15 @@
     "away_goals": 2,
     "available_at": "2026-10-23T21:30:39.780037+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904777",
+    "home_team": "Eyüpspor",
+    "away_team": "Kasımpaşa",
+    "kickoff": "2026-10-24T10:30:00.000Z",
+    "home_goals": 0,
+    "away_goals": 1,
+    "available_at": "2026-10-24T13:07:12.891067+00:00",
+    "source": "fotmob"
   }
 ]
