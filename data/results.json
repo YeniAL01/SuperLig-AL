@@ -738,5 +738,15 @@
     "away_goals": 1,
     "available_at": "2026-10-24T13:07:12.891067+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904776",
+    "home_team": "Gaziantep FK",
+    "away_team": "Erzurumspor FK",
+    "kickoff": "2026-10-24T13:00:00.000Z",
+    "home_goals": 1,
+    "away_goals": 3,
+    "available_at": "2026-10-24T16:33:55.800448+00:00",
+    "source": "fotmob"
   }
 ]
