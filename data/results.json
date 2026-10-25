@@ -758,5 +758,15 @@
     "away_goals": 2,
     "available_at": "2026-10-24T18:58:33.114835+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904781",
+    "home_team": "Konyaspor",
+    "away_team": "Gençlerbirliği",
+    "kickoff": "2026-10-25T13:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-10-25T17:12:35.135576+00:00",
+    "source": "fotmob"
   }
 ]
