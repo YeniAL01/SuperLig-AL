@@ -768,5 +768,15 @@
     "away_goals": 0,
     "available_at": "2026-10-25T17:12:35.135576+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904780",
+    "home_team": "Göztepe",
+    "away_team": "Çorum FK",
+    "kickoff": "2026-10-25T16:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-10-25T19:43:34.833088+00:00",
+    "source": "fotmob"
   }
 ]
