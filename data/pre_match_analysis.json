@@ -1,1 +1,32 @@
-{}
+{
+  "5904783": {
+    "fixture_id": 5904783,
+    "fixture": "Beşiktaş - Başakşehir",
+    "home_team": "Beşiktaş",
+    "away_team": "Başakşehir",
+    "kickoff": "2026-10-26T16:00:00+00:00",
+    "analysis_started_at": "2026-10-26T15:51:42.090322+00:00",
+    "lineup_verified": true,
+    "lineup_attempts": 1,
+    "lineup_verified_at": "2026-10-26T15:51:42.199806+00:00",
+    "last_lineup_check_at": "2026-10-26T15:51:42.090322+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-26T15:51:42.200092+00:00"
+  },
+  "5904779": {
+    "fixture_id": 5904779,
+    "fixture": "Rizespor - Trabzonspor",
+    "home_team": "Rizespor",
+    "away_team": "Trabzonspor",
+    "kickoff": "2026-10-26T16:00:00+00:00",
+    "analysis_started_at": "2026-10-26T15:51:42.213415+00:00",
+    "lineup_verified": true,
+    "lineup_attempts": 1,
+    "lineup_verified_at": "2026-10-26T15:51:42.325110+00:00",
+    "last_lineup_check_at": "2026-10-26T15:51:42.213415+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-26T15:51:42.325354+00:00"
+  }
+}
