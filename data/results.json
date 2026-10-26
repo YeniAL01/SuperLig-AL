@@ -778,5 +778,35 @@
     "away_goals": 0,
     "available_at": "2026-10-25T19:43:34.833088+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904779",
+    "home_team": "Rizespor",
+    "away_team": "Trabzonspor",
+    "kickoff": "2026-10-26T16:00:00.000Z",
+    "home_goals": 3,
+    "away_goals": 4,
+    "available_at": "2026-10-26T20:53:40.681323+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904783",
+    "home_team": "Beşiktaş",
+    "away_team": "Başakşehir",
+    "kickoff": "2026-10-26T16:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-10-26T20:53:40.681323+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904782",
+    "home_team": "Galatasaray",
+    "away_team": "Fenerbahçe",
+    "kickoff": "2026-10-26T18:30:00.000Z",
+    "home_goals": 2,
+    "away_goals": 1,
+    "available_at": "2026-10-26T20:53:40.681323+00:00",
+    "source": "fotmob"
   }
 ]
