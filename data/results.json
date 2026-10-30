@@ -808,5 +808,15 @@
     "away_goals": 1,
     "available_at": "2026-10-26T20:53:40.681323+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904790",
+    "home_team": "Konyaspor",
+    "away_team": "Galatasaray",
+    "kickoff": "2026-10-30T17:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 4,
+    "available_at": "2026-10-30T20:07:04.758559+00:00",
+    "source": "fotmob"
   }
 ]
