@@ -818,5 +818,25 @@
     "away_goals": 4,
     "available_at": "2026-10-30T20:07:04.758559+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904793",
+    "home_team": "Erzurumspor FK",
+    "away_team": "Çorum FK",
+    "kickoff": "2026-10-31T10:30:00.000Z",
+    "home_goals": 1,
+    "away_goals": 3,
+    "available_at": "2026-10-31T15:02:25.656265+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904792",
+    "home_team": "Kocaelispor",
+    "away_team": "Rizespor",
+    "kickoff": "2026-10-31T13:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 0,
+    "available_at": "2026-10-31T15:02:25.656265+00:00",
+    "source": "fotmob"
   }
 ]

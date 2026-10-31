@@ -1,1 +1,17 @@
-{}
+{
+  "5904791": {
+    "fixture_id": 5904791,
+    "fixture": "Fenerbahçe - Göztepe",
+    "home_team": "Fenerbahçe",
+    "away_team": "Göztepe",
+    "kickoff": "2026-10-31T16:00:00+00:00",
+    "analysis_started_at": "2026-10-31T15:02:25.781742+00:00",
+    "lineup_verified": false,
+    "lineup_attempts": 1,
+    "lineup_verified_at": null,
+    "last_lineup_check_at": "2026-10-31T15:02:25.781742+00:00",
+    "lineup_fallback": false,
+    "lineup_fallback_at": null,
+    "updated_at": "2026-10-31T15:02:25.812738+00:00"
+  }
+}
