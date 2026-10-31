@@ -838,5 +838,15 @@
     "away_goals": 0,
     "available_at": "2026-10-31T15:02:25.656265+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904791",
+    "home_team": "Fenerbahçe",
+    "away_team": "Göztepe",
+    "kickoff": "2026-10-31T16:00:00.000Z",
+    "home_goals": 1,
+    "away_goals": 2,
+    "available_at": "2026-10-31T19:14:57.662516+00:00",
+    "source": "fotmob"
   }
 ]
