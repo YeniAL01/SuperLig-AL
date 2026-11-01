@@ -1,17 +1,1 @@
-{
-  "5904786": {
-    "fixture_id": 5904786,
-    "fixture": "Kasımpaşa - Beşiktaş",
-    "home_team": "Kasımpaşa",
-    "away_team": "Beşiktaş",
-    "kickoff": "2026-11-01T16:00:00+00:00",
-    "analysis_started_at": "2026-11-01T15:45:33.772811+00:00",
-    "lineup_verified": true,
-    "lineup_attempts": 1,
-    "lineup_verified_at": "2026-11-01T15:45:33.974828+00:00",
-    "last_lineup_check_at": "2026-11-01T15:45:33.772811+00:00",
-    "lineup_fallback": false,
-    "lineup_fallback_at": null,
-    "updated_at": "2026-11-01T15:45:33.975061+00:00"
-  }
-}
+{}
