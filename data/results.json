@@ -848,5 +848,35 @@
     "away_goals": 2,
     "available_at": "2026-10-31T19:14:57.662516+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904788",
+    "home_team": "Amed Sportif",
+    "away_team": "Eyüpspor",
+    "kickoff": "2026-11-01T10:30:00.000Z",
+    "home_goals": 5,
+    "away_goals": 1,
+    "available_at": "2026-11-01T15:45:33.063200+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904785",
+    "home_team": "Trabzonspor",
+    "away_team": "Gaziantep FK",
+    "kickoff": "2026-11-01T13:00:00.000Z",
+    "home_goals": 2,
+    "away_goals": 0,
+    "available_at": "2026-11-01T15:45:33.063200+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904787",
+    "home_team": "Başakşehir",
+    "away_team": "Samsunspor",
+    "kickoff": "2026-11-01T13:00:00.000Z",
+    "home_goals": 5,
+    "away_goals": 2,
+    "available_at": "2026-11-01T15:45:33.063200+00:00",
+    "source": "fotmob"
   }
 ]
