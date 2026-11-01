@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-31T23:31:27.345041+00:00",
+  "updated_at": "2026-11-01T23:42:54.569421+00:00",
   "markets": {
     "1x2": {
       "baseline_weights": {
@@ -24,12 +24,12 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 21,
+      "total_samples": 22,
       "total_correct": 11,
-      "total_wrong": 10,
-      "season_accuracy": 0.5238095238095238,
+      "total_wrong": 11,
+      "season_accuracy": 0.5,
       "recent_20_error_rate": 0.45,
-      "recent_30_error_rate": 0.47619047619047616,
+      "recent_30_error_rate": 0.5,
       "recent_20": {
         "samples": 20,
         "correct": 11,
@@ -38,22 +38,22 @@
         "error_rate": 0.45
       },
       "recent_30": {
-        "samples": 21,
+        "samples": 22,
         "correct": 11,
-        "wrong": 10,
-        "accuracy": 0.5238095238095238,
-        "error_rate": 0.47619047619047616
+        "wrong": 11,
+        "accuracy": 0.5,
+        "error_rate": 0.5
       },
       "calibration": {
-        "samples": 21,
-        "mean_confidence": 0.43114761904761906,
-        "accuracy": 0.5238095238095238,
-        "gap": -0.09266190476190478
+        "samples": 22,
+        "mean_confidence": 0.43060909090909094,
+        "accuracy": 0.5,
+        "gap": -0.06939090909090906
       },
       "status": "review",
-      "last_review_at": "2026-10-26T23:58:55.384692+00:00",
+      "last_review_at": "2026-11-01T23:42:54.569421+00:00",
       "last_adapted_at": null,
-      "last_review_sample_key": "21:5904783:2026-10-26T20:53:40.681323+00:00",
+      "last_review_sample_key": "22:5904786:2026-11-01T19:54:36.742742+00:00",
       "last_adapted_sample_key": null
     },
     "ou25": {
@@ -78,12 +78,12 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 21,
-      "total_correct": 14,
+      "total_samples": 22,
+      "total_correct": 15,
       "total_wrong": 7,
-      "season_accuracy": 0.6666666666666666,
+      "season_accuracy": 0.6818181818181818,
       "recent_20_error_rate": 0.3,
-      "recent_30_error_rate": 0.3333333333333333,
+      "recent_30_error_rate": 0.3181818181818182,
       "recent_20": {
         "samples": 20,
         "correct": 14,
@@ -92,17 +92,17 @@
         "error_rate": 0.3
       },
       "recent_30": {
-        "samples": 21,
-        "correct": 14,
+        "samples": 22,
+        "correct": 15,
         "wrong": 7,
-        "accuracy": 0.6666666666666666,
-        "error_rate": 0.3333333333333333
+        "accuracy": 0.6818181818181818,
+        "error_rate": 0.3181818181818182
       },
       "calibration": {
-        "samples": 21,
-        "mean_confidence": 0.5763142857142857,
-        "accuracy": 0.6666666666666666,
-        "gap": -0.09035238095238096
+        "samples": 22,
+        "mean_confidence": 0.5753545454545455,
+        "accuracy": 0.6818181818181818,
+        "gap": -0.10646363636363632
       },
       "status": "normal",
       "last_review_at": null,
@@ -132,12 +132,12 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 21,
-      "total_correct": 6,
+      "total_samples": 22,
+      "total_correct": 7,
       "total_wrong": 15,
-      "season_accuracy": 0.2857142857142857,
+      "season_accuracy": 0.3181818181818182,
       "recent_20_error_rate": 0.7,
-      "recent_30_error_rate": 0.7142857142857143,
+      "recent_30_error_rate": 0.6818181818181818,
       "recent_20": {
         "samples": 20,
         "correct": 6,
@@ -146,22 +146,22 @@
         "error_rate": 0.7
       },
       "recent_30": {
-        "samples": 21,
-        "correct": 6,
+        "samples": 22,
+        "correct": 7,
         "wrong": 15,
-        "accuracy": 0.2857142857142857,
-        "error_rate": 0.7142857142857143
+        "accuracy": 0.3181818181818182,
+        "error_rate": 0.6818181818181818
       },
       "calibration": {
-        "samples": 21,
-        "mean_confidence": 0.6061238095238095,
-        "accuracy": 0.2857142857142857,
-        "gap": 0.3204095238095238
+        "samples": 22,
+        "mean_confidence": 0.60565,
+        "accuracy": 0.3181818181818182,
+        "gap": 0.28746818181818184
       },
       "status": "review",
-      "last_review_at": "2026-10-26T23:58:55.384692+00:00",
+      "last_review_at": "2026-11-01T23:42:54.569421+00:00",
       "last_adapted_at": null,
-      "last_review_sample_key": "21:5904783:2026-10-26T20:53:40.681323+00:00",
+      "last_review_sample_key": "22:5904786:2026-11-01T19:54:36.742742+00:00",
       "last_adapted_sample_key": null
     }
   },
@@ -182,6 +182,24 @@
       "samples": 21,
       "recent_20_error_rate": 0.7,
       "season_accuracy": 0.2857142857142857,
+      "reason": "recent_20_error_rate_at_or_above_35_percent"
+    },
+    {
+      "at": "2026-11-01T23:42:54.569421+00:00",
+      "market": "1x2",
+      "type": "review",
+      "samples": 22,
+      "recent_20_error_rate": 0.45,
+      "season_accuracy": 0.5,
+      "reason": "recent_20_error_rate_at_or_above_35_percent"
+    },
+    {
+      "at": "2026-11-01T23:42:54.569421+00:00",
+      "market": "btts",
+      "type": "review",
+      "samples": 22,
+      "recent_20_error_rate": 0.7,
+      "season_accuracy": 0.3181818181818182,
       "reason": "recent_20_error_rate_at_or_above_35_percent"
     }
   ]
