@@ -888,5 +888,15 @@
     "away_goals": 2,
     "available_at": "2026-11-01T19:54:36.742742+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904789",
+    "home_team": "Gençlerbirliği",
+    "away_team": "Alanyaspor",
+    "kickoff": "2026-11-02T17:00:00.000Z",
+    "home_goals": 5,
+    "away_goals": 0,
+    "available_at": "2026-11-02T19:12:27.615287+00:00",
+    "source": "fotmob"
   }
 ]
