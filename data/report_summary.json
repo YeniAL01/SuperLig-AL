@@ -1,56 +1,56 @@
 {
-  "round": "9",
-  "generated_at": "2026-10-27T00:38:01.707736+00:00",
+  "round": "10",
+  "generated_at": "2026-11-03T02:58:10.226091+00:00",
   "weekly": {
     "all": {
-      "matches": 2,
-      "count": 2,
-      "accuracy": 0.5,
-      "winner_accuracy": 0.5,
+      "matches": 1,
+      "count": 1,
+      "accuracy": 0.0,
+      "winner_accuracy": 0.0,
       "exact_score_accuracy": 0.0,
-      "combined_score": 35.955,
-      "log_loss": 0.8896700904303987,
-      "brier_score": 0.5227598507290875
+      "combined_score": 34.25,
+      "log_loss": 1.3299986124403782,
+      "brier_score": 0.8167975065680982
     },
     "eligible": {
-      "matches": 2,
-      "count": 2,
-      "accuracy": 0.5,
-      "winner_accuracy": 0.5,
+      "matches": 1,
+      "count": 1,
+      "accuracy": 0.0,
+      "winner_accuracy": 0.0,
       "exact_score_accuracy": 0.0,
-      "combined_score": 35.955,
-      "log_loss": 0.8896700904303987,
-      "brier_score": 0.5227598507290875
+      "combined_score": 34.25,
+      "log_loss": 1.3299986124403782,
+      "brier_score": 0.8167975065680982
     },
     "delivered": {
-      "matches": 2,
-      "count": 2,
-      "accuracy": 0.5,
-      "winner_accuracy": 0.5,
+      "matches": 1,
+      "count": 1,
+      "accuracy": 0.0,
+      "winner_accuracy": 0.0,
       "exact_score_accuracy": 0.0,
-      "combined_score": 35.955,
-      "log_loss": 0.8896700904303987,
-      "brier_score": 0.5227598507290875
+      "combined_score": 34.25,
+      "log_loss": 1.3299986124403782,
+      "brier_score": 0.8167975065680982
     },
     "published": {
-      "matches": 2,
-      "count": 2,
-      "accuracy": 0.5,
-      "winner_accuracy": 0.5,
+      "matches": 1,
+      "count": 1,
+      "accuracy": 0.0,
+      "winner_accuracy": 0.0,
       "exact_score_accuracy": 0.0,
-      "combined_score": 35.955,
-      "log_loss": 0.8896700904303987,
-      "brier_score": 0.5227598507290875
+      "combined_score": 34.25,
+      "log_loss": 1.3299986124403782,
+      "brier_score": 0.8167975065680982
     },
     "combined": {
-      "count": 2,
-      "combined_score": 35.955,
+      "count": 1,
+      "combined_score": 34.25,
       "field_scores": {
-        "1x2": 0.5,
+        "1x2": 0.0,
         "exact_score": 0.0,
-        "combined": 35.955,
-        "ou25": 0.5,
-        "btts": 0.5
+        "combined": 34.25,
+        "ou25": 1.0,
+        "btts": 1.0
       },
       "weights": {
         "winner": 0.25,
@@ -63,9 +63,9 @@
     "history": [
       {
         "period": 1,
-        "matches": 2,
-        "combined_score": 35.955,
-        "winner_accuracy": 0.5,
+        "matches": 1,
+        "combined_score": 34.25,
+        "winner_accuracy": 0.0,
         "exact_score_accuracy": 0.0
       }
     ],
@@ -75,21 +75,12 @@
     "reliability": [
       {
         "range": [
-          0,
-          40
-        ],
-        "matches": 1,
-        "predicted": 0.37189999999999995,
-        "observed": 0.0
-      },
-      {
-        "range": [
           40,
           50
         ],
         "matches": 1,
-        "predicted": 0.4585,
-        "observed": 1.0
+        "predicted": 0.4193,
+        "observed": 0.0
       }
     ]
   }
