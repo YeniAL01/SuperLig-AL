@@ -898,5 +898,15 @@
     "away_goals": 0,
     "available_at": "2026-11-02T19:12:27.615287+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904794",
+    "home_team": "Gaziantep FK",
+    "away_team": "Kasımpaşa",
+    "kickoff": "2026-11-06T17:00:00.000Z",
+    "home_goals": 0,
+    "away_goals": 2,
+    "available_at": "2026-11-06T21:44:50.457772+00:00",
+    "source": "fotmob"
   }
 ]
