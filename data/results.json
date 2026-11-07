@@ -908,5 +908,25 @@
     "away_goals": 2,
     "available_at": "2026-11-06T21:44:50.457772+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904795",
+    "home_team": "Eyüpspor",
+    "away_team": "Kocaelispor",
+    "kickoff": "2026-11-07T10:30:00.000Z",
+    "home_goals": 0,
+    "away_goals": 2,
+    "available_at": "2026-11-07T15:24:53.480715+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904802",
+    "home_team": "Samsunspor",
+    "away_team": "Konyaspor",
+    "kickoff": "2026-11-07T13:00:00.000Z",
+    "home_goals": 1,
+    "away_goals": 0,
+    "available_at": "2026-11-07T15:24:53.480715+00:00",
+    "source": "fotmob"
   }
 ]
