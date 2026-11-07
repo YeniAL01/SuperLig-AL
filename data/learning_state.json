@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-11-03T02:58:09.835769+00:00",
+  "updated_at": "2026-11-07T00:11:36.741757+00:00",
   "markets": {
     "1x2": {
       "baseline_weights": {
@@ -24,36 +24,36 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 22,
+      "total_samples": 23,
       "total_correct": 11,
-      "total_wrong": 11,
-      "season_accuracy": 0.5,
-      "recent_20_error_rate": 0.45,
-      "recent_30_error_rate": 0.5,
+      "total_wrong": 12,
+      "season_accuracy": 0.4782608695652174,
+      "recent_20_error_rate": 0.5,
+      "recent_30_error_rate": 0.5217391304347826,
       "recent_20": {
         "samples": 20,
-        "correct": 11,
-        "wrong": 9,
-        "accuracy": 0.55,
-        "error_rate": 0.45
-      },
-      "recent_30": {
-        "samples": 22,
-        "correct": 11,
-        "wrong": 11,
+        "correct": 10,
+        "wrong": 10,
         "accuracy": 0.5,
         "error_rate": 0.5
       },
+      "recent_30": {
+        "samples": 23,
+        "correct": 11,
+        "wrong": 12,
+        "accuracy": 0.4782608695652174,
+        "error_rate": 0.5217391304347826
+      },
       "calibration": {
-        "samples": 22,
-        "mean_confidence": 0.43060909090909094,
-        "accuracy": 0.5,
-        "gap": -0.06939090909090906
+        "samples": 23,
+        "mean_confidence": 0.42840434782608694,
+        "accuracy": 0.4782608695652174,
+        "gap": -0.049856521739130466
       },
       "status": "review",
-      "last_review_at": "2026-11-01T23:42:54.569421+00:00",
+      "last_review_at": "2026-11-07T00:11:36.741757+00:00",
       "last_adapted_at": null,
-      "last_review_sample_key": "22:5904786:2026-11-01T19:54:36.742742+00:00",
+      "last_review_sample_key": "23:5904794:2026-11-06T21:44:50.457772+00:00",
       "last_adapted_sample_key": null
     },
     "ou25": {
@@ -78,36 +78,36 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 22,
+      "total_samples": 23,
       "total_correct": 15,
-      "total_wrong": 7,
-      "season_accuracy": 0.6818181818181818,
-      "recent_20_error_rate": 0.3,
-      "recent_30_error_rate": 0.3181818181818182,
+      "total_wrong": 8,
+      "season_accuracy": 0.6521739130434783,
+      "recent_20_error_rate": 0.35,
+      "recent_30_error_rate": 0.34782608695652173,
       "recent_20": {
         "samples": 20,
-        "correct": 14,
-        "wrong": 6,
-        "accuracy": 0.7,
-        "error_rate": 0.3
+        "correct": 13,
+        "wrong": 7,
+        "accuracy": 0.65,
+        "error_rate": 0.35
       },
       "recent_30": {
-        "samples": 22,
+        "samples": 23,
         "correct": 15,
-        "wrong": 7,
-        "accuracy": 0.6818181818181818,
-        "error_rate": 0.3181818181818182
+        "wrong": 8,
+        "accuracy": 0.6521739130434783,
+        "error_rate": 0.34782608695652173
       },
       "calibration": {
-        "samples": 22,
-        "mean_confidence": 0.5753545454545455,
-        "accuracy": 0.6818181818181818,
-        "gap": -0.10646363636363632
+        "samples": 23,
+        "mean_confidence": 0.5733739130434783,
+        "accuracy": 0.6521739130434783,
+        "gap": -0.07879999999999998
       },
-      "status": "normal",
-      "last_review_at": null,
+      "status": "review",
+      "last_review_at": "2026-11-07T00:11:36.741757+00:00",
       "last_adapted_at": null,
-      "last_review_sample_key": null,
+      "last_review_sample_key": "23:5904794:2026-11-06T21:44:50.457772+00:00",
       "last_adapted_sample_key": null
     },
     "btts": {
@@ -132,12 +132,12 @@
         "model_signal": 1.0
       },
       "calibration_multiplier": 1.0,
-      "total_samples": 22,
+      "total_samples": 23,
       "total_correct": 7,
-      "total_wrong": 15,
-      "season_accuracy": 0.3181818181818182,
+      "total_wrong": 16,
+      "season_accuracy": 0.30434782608695654,
       "recent_20_error_rate": 0.7,
-      "recent_30_error_rate": 0.6818181818181818,
+      "recent_30_error_rate": 0.6956521739130435,
       "recent_20": {
         "samples": 20,
         "correct": 6,
@@ -146,22 +146,22 @@
         "error_rate": 0.7
       },
       "recent_30": {
-        "samples": 22,
+        "samples": 23,
         "correct": 7,
-        "wrong": 15,
-        "accuracy": 0.3181818181818182,
-        "error_rate": 0.6818181818181818
+        "wrong": 16,
+        "accuracy": 0.30434782608695654,
+        "error_rate": 0.6956521739130435
       },
       "calibration": {
-        "samples": 22,
-        "mean_confidence": 0.60565,
-        "accuracy": 0.3181818181818182,
-        "gap": 0.28746818181818184
+        "samples": 23,
+        "mean_confidence": 0.604104347826087,
+        "accuracy": 0.30434782608695654,
+        "gap": 0.2997565217391305
       },
       "status": "review",
-      "last_review_at": "2026-11-01T23:42:54.569421+00:00",
+      "last_review_at": "2026-11-07T00:11:36.741757+00:00",
       "last_adapted_at": null,
-      "last_review_sample_key": "22:5904786:2026-11-01T19:54:36.742742+00:00",
+      "last_review_sample_key": "23:5904794:2026-11-06T21:44:50.457772+00:00",
       "last_adapted_sample_key": null
     }
   },
@@ -200,6 +200,33 @@
       "samples": 22,
       "recent_20_error_rate": 0.7,
       "season_accuracy": 0.3181818181818182,
+      "reason": "recent_20_error_rate_at_or_above_35_percent"
+    },
+    {
+      "at": "2026-11-07T00:11:36.741757+00:00",
+      "market": "1x2",
+      "type": "review",
+      "samples": 23,
+      "recent_20_error_rate": 0.5,
+      "season_accuracy": 0.4782608695652174,
+      "reason": "recent_20_error_rate_at_or_above_35_percent"
+    },
+    {
+      "at": "2026-11-07T00:11:36.741757+00:00",
+      "market": "ou25",
+      "type": "review",
+      "samples": 23,
+      "recent_20_error_rate": 0.35,
+      "season_accuracy": 0.6521739130434783,
+      "reason": "recent_20_error_rate_at_or_above_35_percent"
+    },
+    {
+      "at": "2026-11-07T00:11:36.741757+00:00",
+      "market": "btts",
+      "type": "review",
+      "samples": 23,
+      "recent_20_error_rate": 0.7,
+      "season_accuracy": 0.30434782608695654,
       "reason": "recent_20_error_rate_at_or_above_35_percent"
     }
   ]

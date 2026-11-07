@@ -1,53 +1,53 @@
 {
   "all": {
+    "matches": 23,
+    "count": 23,
+    "accuracy": 0.4782608695652174,
+    "winner_accuracy": 0.4782608695652174,
+    "exact_score_accuracy": 0.08695652173913043,
+    "combined_score": 36.78434782608696,
+    "log_loss": 1.0038676493404493,
+    "brier_score": 0.6013812039978935
+  },
+  "eligible": {
     "matches": 22,
     "count": 22,
     "accuracy": 0.5,
     "winner_accuracy": 0.5,
     "exact_score_accuracy": 0.09090909090909091,
-    "combined_score": 37.88272727272727,
-    "log_loss": 1.0031718787455812,
-    "brier_score": 0.6005366490365188
-  },
-  "eligible": {
-    "matches": 21,
-    "count": 21,
-    "accuracy": 0.5238095238095238,
-    "winner_accuracy": 0.5238095238095238,
-    "exact_score_accuracy": 0.09523809523809523,
-    "combined_score": 38.84619047619047,
-    "log_loss": 0.9868465953463044,
-    "brier_score": 0.5890144276559263
+    "combined_score": 37.65409090909091,
+    "log_loss": 0.9883160502136336,
+    "brier_score": 0.590421108814663
   },
   "delivered": {
-    "matches": 21,
-    "count": 21,
-    "accuracy": 0.5238095238095238,
-    "winner_accuracy": 0.5238095238095238,
-    "exact_score_accuracy": 0.09523809523809523,
-    "combined_score": 38.84619047619047,
-    "log_loss": 0.9868465953463044,
-    "brier_score": 0.5890144276559263
+    "matches": 22,
+    "count": 22,
+    "accuracy": 0.5,
+    "winner_accuracy": 0.5,
+    "exact_score_accuracy": 0.09090909090909091,
+    "combined_score": 37.65409090909091,
+    "log_loss": 0.9883160502136336,
+    "brier_score": 0.590421108814663
   },
   "published": {
-    "matches": 21,
-    "count": 21,
-    "accuracy": 0.5238095238095238,
-    "winner_accuracy": 0.5238095238095238,
-    "exact_score_accuracy": 0.09523809523809523,
-    "combined_score": 38.84619047619047,
-    "log_loss": 0.9868465953463044,
-    "brier_score": 0.5890144276559263
+    "matches": 22,
+    "count": 22,
+    "accuracy": 0.5,
+    "winner_accuracy": 0.5,
+    "exact_score_accuracy": 0.09090909090909091,
+    "combined_score": 37.65409090909091,
+    "log_loss": 0.9883160502136336,
+    "brier_score": 0.590421108814663
   },
   "combined": {
-    "count": 22,
-    "combined_score": 37.88272727272727,
+    "count": 23,
+    "combined_score": 36.78434782608696,
     "field_scores": {
-      "1x2": 0.5,
-      "exact_score": 0.09090909090909091,
-      "combined": 37.88272727272727,
-      "ou25": 0.6153846153846154,
-      "btts": 0.3076923076923077
+      "1x2": 0.4782608695652174,
+      "exact_score": 0.08695652173913043,
+      "combined": 36.78434782608696,
+      "ou25": 0.5714285714285714,
+      "btts": 0.2857142857142857
     },
     "weights": {
       "winner": 0.25,
@@ -67,23 +67,23 @@
     },
     {
       "period": 2,
-      "matches": 2,
-      "combined_score": 31.064999999999998,
+      "matches": 3,
+      "combined_score": 24.916666666666668,
       "winner_accuracy": 0.0,
       "exact_score_accuracy": 0.0
     }
   ],
-  "eligible_coverage": 0.9545454545454546,
-  "delivery_coverage": 0.9545454545454546,
-  "coverage": 0.9545454545454546,
+  "eligible_coverage": 0.9565217391304348,
+  "delivery_coverage": 0.9565217391304348,
+  "coverage": 0.9565217391304348,
   "reliability": [
     {
       "range": [
         0,
         40
       ],
-      "matches": 3,
-      "predicted": 0.38473333333333337,
+      "matches": 4,
+      "predicted": 0.383525,
       "observed": 0.0
     },
     {
