@@ -968,5 +968,25 @@
     "away_goals": 5,
     "available_at": "2026-11-08T15:47:56.023852+00:00",
     "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904796",
+    "home_team": "Alanyaspor",
+    "away_team": "Trabzonspor",
+    "kickoff": "2026-11-08T15:30:00.000Z",
+    "home_goals": 0,
+    "away_goals": 2,
+    "available_at": "2026-11-08T19:59:50.712765+00:00",
+    "source": "fotmob"
+  },
+  {
+    "fixture_id": "5904801",
+    "home_team": "Beşiktaş",
+    "away_team": "Gençlerbirliği",
+    "kickoff": "2026-11-08T18:00:00.000Z",
+    "home_goals": 3,
+    "away_goals": 0,
+    "available_at": "2026-11-08T19:59:50.712765+00:00",
+    "source": "fotmob"
   }
 ]
